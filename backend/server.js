@@ -1,8 +1,11 @@
+// .env dosyasındaki gizli bilgileri (veritabanı adresi) okuyorum. EN ÜSTTE olmalı.
+require("dotenv").config();
+
 // ============================================================
 //  TRELLO CLONE - BACKEND (Sunucu Tarafı)
 //  Node.js + Express + Sequelize (ORM) ile yazdım.
 //  Yapı: User (Kullanıcı) -> Project (Proje) -> Task (Görev)
-//  Veritabanı olarak SQLite kullandım (dosya tabanlı SQL veritabanı).
+//  Veritabanı olarak PostgreSQL kullanıyorum (Render'da, bulutta).
 // ============================================================
 
 // --- Kullandığım hazır kütüphaneleri (paketleri) çağırıyorum ---
@@ -52,11 +55,20 @@ const SECRET = "benim_gizli_anahtarim_123";
 //  ORM sayesinde "SELECT * FROM..." gibi SQL cümleleri yazmıyorum;
 //  onun yerine JavaScript koduyla (User.findAll gibi) veritabanını yönetiyorum.
 //  Bu hem daha okunaklı hem de SQL injection saldırılarına karşı güvenli.
+//
+//  Veritabanı adresini güvenlik için koda yazmıyorum; .env dosyasından
+//  (DATABASE_URL) okuyorum. Böylece gizli bilgi GitHub'a sızmaz.
 // ============================================================
-const sequelize = new Sequelize({
-  dialect: "sqlite",       // Veritabanı türüm SQLite
-  storage: "trello.db",    // Veriler bu dosyada tutuluyor
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "postgres",     // Veritabanı türüm PostgreSQL
   logging: false,          // Konsolda SQL loglarını kapattım (ekran temiz kalsın)
+  dialectOptions: {
+    // Render'ın PostgreSQL'i güvenli (SSL) bağlantı ister. Bu ayar onu sağlıyor.
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
 });
 
 // ============================================================
@@ -138,13 +150,12 @@ app.post("/auth/register", authLimiter, async (req, res) => {
   }
 
   // 2) Email format kontrolü: içinde "@" ve "." var mı, geçerli bir email mi?
-  //    (basit bir kontrol; kullanıcı "abc" gibi geçersiz bir şey yazamasın diye)
   const emailGecerli = /^\S+@\S+\.\S+$/.test(email);
   if (!emailGecerli) {
     return res.status(400).json({ message: "Geçerli bir email adresi girin" });
   }
 
-  // 3) Şifre uzunluğu kontrolü: en az 4 karakter olsun (çok kısa şifreyi engelledim)
+  // 3) Şifre uzunluğu kontrolü: en az 4 karakter olsun
   if (password.length < 4) {
     return res.status(400).json({ message: "Şifre en az 4 karakter olmalı" });
   }
@@ -156,8 +167,7 @@ app.post("/auth/register", authLimiter, async (req, res) => {
   }
 
   // 5) Şifreyi düz metin OLARAK DEĞİL, bcrypt ile hash'leyerek (şifreleyerek) kaydediyorum.
-  //    Böylece veritabanı çalınsa bile kimse şifreyi okuyamaz.
-  const hashedPassword = bcrypt.hashSync(password, 10); // 10 = şifreleme gücü
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
   // 6) Yeni kullanıcıyı ORM ile oluşturuyorum
   const user = await User.create({ name, email, password: hashedPassword });
@@ -180,7 +190,6 @@ app.post("/auth/login", authLimiter, async (req, res) => {
   if (!valid) return res.status(400).json({ message: "Email veya şifre hatalı" });
 
   // Şifre doğruysa, kullanıcıya 7 gün geçerli bir JWT token (kimlik kartı) üretiyorum.
-  // Token'ın içine id, isim ve rol bilgisini koyuyorum (sonraki isteklerde işime yarayacak).
   const token = jwt.sign(
     { id: user.id, name: user.name, role: user.role },
     SECRET,
@@ -194,16 +203,14 @@ app.post("/auth/login", authLimiter, async (req, res) => {
 //  PROJE İŞLEMLERİ
 // ============================================================
 
-// Projeleri listele. (auth = önce giriş kontrolü yapılır)
-// Kural: Admin TÜM projeleri görür; normal kullanıcı SADECE kendi projelerini görür.
+// Projeleri listele. Admin TÜM projeleri, normal kullanıcı SADECE kendi projelerini görür.
 app.get("/projects", auth, async (req, res) => {
   let projects;
   if (req.user.role === "admin") {
     // Admin ise: tüm projeleri, her projenin sahibinin adıyla birlikte getiriyorum
     projects = await Project.findAll({
-      include: { model: User, attributes: ["name"] }, // İlişkili User tablosundan sadece 'name' al
+      include: { model: User, attributes: ["name"] },
     });
-    // Gelen veriyi sadeleştiriyorum: sahibin adını "owner" alanı olarak ekliyorum
     projects = projects.map((p) => ({
       id: p.id,
       title: p.title,
@@ -221,14 +228,13 @@ app.get("/projects", auth, async (req, res) => {
 app.post("/projects", auth, async (req, res) => {
   const { title } = req.body;
   if (!title) return res.status(400).json({ message: "Proje adı gerekli" });
-  // Projeyi, sahibini (owner_id) giriş yapan kişi olacak şekilde oluşturuyorum
   const project = await Project.create({ title, owner_id: req.user.id });
   res.status(201).json(project);
 });
 
 // Projeyi sil. Kural: Sadece projenin SAHİBİ veya ADMIN silebilir.
 app.delete("/projects/:id", auth, async (req, res) => {
-  const project = await Project.findByPk(req.params.id); // id'ye göre projeyi bul
+  const project = await Project.findByPk(req.params.id);
   if (!project) return res.status(404).json({ message: "Proje bulunamadı" });
 
   // Yetki kontrolü: Bu proje bana ait değilse VE ben admin de değilsem, izin verme
@@ -256,7 +262,6 @@ app.get("/projects/:projectId/tasks", auth, async (req, res) => {
     return res.status(403).json({ message: "Bu projeye erişiminiz yok" });
   }
 
-  // O projeye ait tüm görevleri getir
   const tasks = await Task.findAll({ where: { project_id: req.params.projectId } });
   res.json(tasks);
 });
@@ -266,13 +271,11 @@ app.post("/projects/:projectId/tasks", auth, async (req, res) => {
   const project = await Project.findByPk(req.params.projectId);
   if (!project) return res.status(404).json({ message: "Proje bulunamadı" });
 
-  // Yetki kontrolü
   if (project.owner_id !== req.user.id && req.user.role !== "admin") {
     return res.status(403).json({ message: "Bu projeye erişiminiz yok" });
   }
 
   const { title, status } = req.body;
-  // Görevi oluştururken hangi projeye ve hangi kullanıcıya ait olduğunu da kaydediyorum
   const task = await Task.create({
     title,
     status: status || "todo", // Durum belirtilmezse varsayılan "todo"
@@ -314,10 +317,11 @@ app.delete("/tasks/:id", auth, async (req, res) => {
 
 // ============================================================
 //  SUNUCUYU BAŞLAT
-//  "0.0.0.0" yazmamın sebebi: telefonun (mobil uygulama) da bu sunucuya
-//  yerel ağ üzerinden bağlanabilmesi. Sadece bu bilgisayarı değil, ağı dinliyor.
+//  process.env.PORT: Deploy edildiğinde (Render'da) sunucu portunu Render belirler.
+//  O yüzden önce Render'ın verdiği portu, o yoksa 3000'i kullanıyorum.
+//  "0.0.0.0": Telefonun (mobil) da yerel ağdan bağlanabilmesi için.
 // ============================================================
-app.listen(3000, "0.0.0.0", () => {
-  console.log("Sunucu çalışıyor: http://localhost:3000");
-  console.log("Telefon için: http://192.168.0.10:3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("Sunucu çalışıyor. Port: " + PORT);
 });
