@@ -13,7 +13,7 @@ import {
 // Backend adresim. Telefon "localhost" deyince kendini arar, bilgisayarı bulamaz.
 // O yüzden bilgisayarımın yerel ağ (Wi-Fi) IP adresini yazdım.
 // (Not: Ağ değişirse bu adres de güncellenmeli.)
-const API = "http://192.168.0.10:3000";
+const API = "https://trello-clone-pjnd.onrender.com";
 
 // Kanban kolonlarım (web'deki ile aynı: 3 durum)
 const COLUMNS = [
