@@ -10,9 +10,7 @@ import {
   StyleSheet, SafeAreaView, Alert,
 } from "react-native";
 
-// Backend adresim. Telefon "localhost" deyince kendini arar, bilgisayarı bulamaz.
-// O yüzden bilgisayarımın yerel ağ (Wi-Fi) IP adresini yazdım.
-// (Not: Ağ değişirse bu adres de güncellenmeli.)
+//Deploy ettiğim siteye bağladım.
 const API = "https://trello-clone-pjnd.onrender.com";
 
 // Kanban kolonlarım (web'deki ile aynı: 3 durum)

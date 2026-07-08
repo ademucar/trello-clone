@@ -9,7 +9,7 @@ function createWindow() {
     title: "Trello Clone",
   });
 
-  // React sitemi (Vite dev sunucusu) bu pencerede açtım
+  // Pencereyi web adresine(deploy ettiğim siteye) yönlendirdim.
   win.loadURL("https://trello-clone-swart-ten.vercel.app");
 }
 

@@ -3,7 +3,7 @@
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:5067c5,50:7b3fe4,100:0d1025&height=200&section=header&text=Trello%20Clone&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Akıllı%20Görev%20%26%20Proje%20Yönetim%20Sistemi&descAlignY=58&descSize=18" width="100%"/>
 
 <a href="https://git.io/typing-svg">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=7B9FFF&center=true&vCenter=true&width=600&lines=Full-Stack+Multi-Platform+Application;Web+%2B+Masa%C3%Bcst%C3%Bc+%2B+Mobil;Node.js+%7C+React+%7C+React+Native+%7C+Electron" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=7B9FFF&center=true&vCenter=true&width=650&lines=Full-Stack+Multi-Platform+Application;Web+%2B+Masa%C3%Bcst%C3%Bc+%2B+Mobil;Node.js+%7C+React+%7C+React+Native+%7C+Electron;PostgreSQL+%7C+Sequelize+%7C+JWT" alt="Typing SVG" />
 </a>
 
 <br/>
@@ -13,9 +13,13 @@
 ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Electron](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Sequelize](https://img.shields.io/badge/Sequelize-52B0E7?style=for-the-badge&logo=sequelize&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+
+<br/>
+
+### 🌐 [Canlı Demo →](https://trello-clone-swart-ten.vercel.app)
 
 </div>
 
@@ -25,9 +29,20 @@
 
 **Trello Clone**, ekiplerin ve bireylerin görevlerini **"Yapılacak → Yapılıyor → Bitti"** mantığıyla (Kanban) takip edebildiği, çok platformlu bir iş yönetim sistemidir.
 
-Kullanıcılar proje oluşturur, her projeye görev ekler ve görevleri sürükle-taşı mantığıyla durumlar arasında hareket ettirir. Sistem **web, masaüstü ve mobil** olmak üzere üç platformda çalışır ve hepsi **aynı backend'i** paylaşır.
+Kullanıcılar proje oluşturur, her projeye görev ekler ve görevleri durumlar arasında hareket ettirir. Sistem **web, masaüstü ve mobil** olmak üzere üç platformda çalışır ve hepsi **aynı backend ve veritabanını** paylaşır.
 
-> Bu proje bir staj kapsamında, full-stack mimariyi baştan sona (analiz → backend → frontend → auth → güvenlik → çok platform) uygulamak amacıyla geliştirilmiştir.
+> Bu proje bir staj kapsamında, full-stack mimariyi baştan sona (analiz → backend → frontend → auth → güvenlik → çok platform → deploy) uygulamak amacıyla geliştirilmiştir.
+
+---
+
+## 🚀 Canlı Erişim
+
+| Platform | Adres |
+|----------|-------|
+| 🌐 **Web (Frontend)** | [trello-clone-swart-ten.vercel.app](https://trello-clone-swart-ten.vercel.app) |
+| ⚙️ **API (Backend)** | [trello-clone-pjnd.onrender.com](https://trello-clone-pjnd.onrender.com) |
+
+> ℹ️ Backend ücretsiz sunucuda barındığı için, uzun süre kullanılmadığında "uyku" moduna geçer. İlk istekte ~30-50 saniye gecikme olabilir; sonra normal hızına döner.
 
 ---
 
@@ -42,6 +57,7 @@ Kullanıcılar proje oluşturur, her projeye görev ekler ve görevleri sürükl
 | 👥 | **Rol Bazlı Erişim** | `admin` tüm verileri, `user` yalnızca kendi verilerini görür |
 | 🛡️ | **Rate Limiting** | Brute-force saldırılarına karşı istek sınırlama |
 | 🌐 | **Çok Platform** | Web + Masaüstü (.exe) + Mobil (iOS) tek backend üzerinde |
+| ☁️ | **Bulut Dağıtım** | Vercel (web) + Render (backend & PostgreSQL) ile canlıda |
 
 ---
 
@@ -53,11 +69,12 @@ Kullanıcılar proje oluşturur, her projeye görev ekler ve görevleri sürükl
 |--------|-----------|
 | **Backend** | Node.js · Express |
 | **ORM** | Sequelize |
-| **Veritabanı** | SQLite |
+| **Veritabanı** | PostgreSQL |
 | **Web** | React (Vite) |
 | **Mobil** | React Native (Expo) |
 | **Masaüstü** | Electron |
 | **Güvenlik** | JWT · bcrypt · express-rate-limit |
+| **Dağıtım (Deploy)** | Vercel · Render |
 
 </div>
 
@@ -66,12 +83,12 @@ Kullanıcılar proje oluşturur, her projeye görev ekler ve görevleri sürükl
 ## 🏗️ Sistem Mimarisi
 
 ```
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│   KULLANICI  │   │   FRONTEND   │   │   BACKEND    │   ┌────────────┐
-│  Web/Mobil/  │──▶│    React /   │──▶│  Node.js +   │──▶│ VERİTABANI │
-│   Masaüstü   │   │ React Native │   │   Express    │   │  (SQLite)  │
-└──────────────┘   └──────────────┘   └──────────────┘   └────────────┘
-                                       Sequelize (ORM)
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│   KULLANICI  │   │   FRONTEND   │   │   BACKEND    │   │  VERİTABANI  │
+│  Web/Mobil/  │──▶│   React /    │──▶│  Node.js +   │──▶│  PostgreSQL  │
+│   Masaüstü   │   │ React Native │   │   Express    │   │   (Render)   │
+└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
+                     (Vercel)          Sequelize (ORM)      (Render)
 ```
 
 **Veritabanı İlişkileri (ER):**
@@ -92,7 +109,7 @@ USER (1) ──────< (∞) PROJECT (1) ──────< (∞) TASK
 
 ```
 trello-clone/
-├── backend/          # Node.js + Express + Sequelize API
+├── backend/          # Node.js + Express + Sequelize API (PostgreSQL)
 │   └── server.js     # Tüm API endpoint'leri ve veritabanı modelleri
 ├── frontend/         # React (Vite) web arayüzü
 │   └── src/App.jsx   # Kanban panosu ve giriş ekranı
@@ -104,11 +121,12 @@ trello-clone/
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
+## 🚀 Kurulum ve Çalıştırma (Lokal)
 
 ### Gereksinimler
 - [Node.js](https://nodejs.org/) (LTS sürümü)
 - [Expo Go](https://expo.dev/go) (mobil test için)
+- Bir PostgreSQL bağlantı adresi (`.env` içinde `DATABASE_URL`)
 
 ### 1️⃣ Backend
 
@@ -118,6 +136,7 @@ npm install
 node server.js
 ```
 > Sunucu `http://localhost:3000` adresinde çalışır.
+> Not: `backend/.env` dosyasında `DATABASE_URL` tanımlı olmalıdır.
 
 ### 2️⃣ Web (Frontend)
 
@@ -136,7 +155,6 @@ npm install
 npx expo start
 ```
 > Çıkan QR kodu telefondaki **Expo Go** ile okutun.
-> ⚠️ Telefon ve bilgisayar aynı Wi-Fi ağında olmalıdır.
 
 ### 4️⃣ Masaüstü (Electron)
 
@@ -169,6 +187,7 @@ npm run electron
 - Tüm görev/proje işlemleri **JWT token** ile korunur
 - Veritabanı sorguları **Sequelize ORM** üzerinden yapılır → **SQL Injection** koruması
 - Giriş denemeleri **rate limit** ile sınırlanır → brute-force koruması
+- Gizli bilgiler (veritabanı adresi) `.env` dosyasında tutulur, koda yazılmaz
 
 ---
 

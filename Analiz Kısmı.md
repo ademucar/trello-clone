@@ -2,8 +2,10 @@
 ## Analiz & Tasarım Dokümanı
 
 Bu doküman, projenin kodlanmadan önce nasıl planlandığını ve genel mimarisini anlatır.
-Sistem; web, masaüstü ve mobil olmak üzere üç platformda çalışan, çok platformlu (multi-platform)
-bir görev yönetim uygulamasıdır.
+Sistem; web, masaüstü ve mobil olmak üzere üç platformda çalışan, buluta dağıtılmış (deploy edilmiş),
+çok platformlu (multi-platform) bir görev yönetim uygulamasıdır.
+
+**Canlı Adres:** https://trello-clone-swart-ten.vercel.app
 
 ---
 
@@ -114,7 +116,7 @@ Backend hazır olmadan frontend'i test edebilmek için sahte (fake) bir API kull
 
 ```
 KULLANICI            FRONTEND              BACKEND            VERİTABANI
-(Web/Masaüstü/  -->  React /          -->  Node.js +     -->  SQLite
+(Web/Masaüstü/  -->  React /          -->  Node.js +     -->  PostgreSQL
  Mobil)              React Native          Express             (Sequelize ORM)
 ```
 
@@ -131,8 +133,8 @@ Sistem üç farklı platformda çalışır ve **hepsi aynı backend'i / veritaba
 
 | Platform | Teknoloji | Açıklama |
 |---|---|---|
-| **Web** | React (Vite) | Tarayıcıda çalışan ana arayüz; Kanban panosu |
-| **Masaüstü** | Electron | Web uygulamasını masaüstü penceresine saran, `.exe` olarak paketlenen uygulama |
+| **Web** | React (Vite) | Tarayıcıda çalışan ana arayüz; Kanban panosu (Vercel'de yayında) |
+| **Masaüstü** | Electron | Web uygulamasını masaüstü penceresinde açan, `.exe` olarak paketlenen uygulama |
 | **Mobil** | React Native (Expo) | iPhone üzerinde çalışan, aynı backend'e bağlanan mobil uygulama |
 
 Bir platformda eklenen veri (örneğin web'de oluşturulan bir görev), aynı backend paylaşıldığı için
@@ -147,29 +149,48 @@ diğer platformlarda (mobil / masaüstü) da görünür.
 - **Rol Bazlı Erişim (admin / user):** admin tüm verileri, normal kullanıcı yalnızca kendi verilerini görür.
 - **Rate Limit:** Belirli sürede fazla istek atan engellenir (brute-force / spam koruması).
 - **SQL Injection Koruması:** Tüm veritabanı işlemleri Sequelize ORM'in parametreli sorgularıyla yapılır.
+- **Gizli Bilgi Yönetimi:** Veritabanı bağlantı adresi `.env` dosyasında tutulur, koda yazılmaz ve GitHub'a gönderilmez.
 
 ---
 
-## 9. Kullanılan Teknolojiler (Özet)
+## 9. Bulut Dağıtım (Deploy) Mimarisi
+
+Proje geliştirme aşamasından sonra canlıya (internete) alınmıştır:
+
+| Bileşen | Platform | Açıklama |
+|---|---|---|
+| **Frontend (Web)** | Vercel | React uygulaması otomatik olarak build edilip yayınlanır |
+| **Backend (API)** | Render | Node.js sunucusu bulutta çalışır |
+| **Veritabanı** | Render PostgreSQL | Kalıcı, bulut tabanlı veritabanı |
+
+Her üç bileşen de bulutta olduğu için, sistem geliştiricinin bilgisayarı kapalıyken bile
+internet üzerinden erişilebilir durumdadır.
+
+---
+
+## 10. Kullanılan Teknolojiler (Özet)
 
 | Katman | Teknoloji |
 |---|---|
 | Backend | Node.js, Express |
 | ORM | Sequelize |
-| Veritabanı | SQLite |
+| Veritabanı | PostgreSQL |
 | Web | React (Vite) |
 | Mobil | React Native (Expo) |
 | Masaüstü | Electron (.exe paketleme) |
 | Kimlik Doğrulama | JWT |
 | Güvenlik | bcrypt, express-rate-limit |
+| Dağıtım | Vercel, Render |
 
 ---
 
-## 10. Geliştirme Adımları (Özet Yol Haritası)
+## 11. Geliştirme Adımları (Özet Yol Haritası)
 
 1. **Analiz & Tasarım:** User story, ER diagram, endpoint planı çıkarıldı.
-2. **Backend & Veritabanı:** Express API kuruldu, Sequelize ORM ile SQLite'a bağlandı, CRUD yazıldı.
+2. **Backend & Veritabanı:** Express API kuruldu, Sequelize ORM ile veritabanına bağlandı, CRUD yazıldı.
 3. **Web & Auth:** React ile Kanban arayüzü yapıldı, JWT giriş/kayıt eklendi.
 4. **Güvenlik & Yetkilendirme:** Rol bazlı erişim ve rate limit eklendi.
 5. **Çok Platform:** Electron ile masaüstü (.exe), React Native ile mobil uygulama geliştirildi.
-6. **Dokümantasyon & Yayın:** GitHub'a yüklendi, README hazırlandı.
+6. **Veritabanı Yükseltmesi:** SQLite'tan bulut tabanlı PostgreSQL'e geçildi (ORM sayesinde kolayca).
+7. **Dağıtım (Deploy):** Frontend Vercel'e, backend ve veritabanı Render'a alınarak canlıya çıkıldı.
+8. **Dokümantasyon & Yayın:** GitHub'a yüklendi, README ve analiz dokümanı hazırlandı.
