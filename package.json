@@ -1,0 +1,33 @@
+{
+  "name": "trello-clone",
+  "version": "1.0.0",
+  "description": "Trello Clone - Görev Yönetim Sistemi",
+  "main": "electron-main.js",
+  "scripts": {
+    "electron": "electron electron-main.js",
+    "build-exe": "electron-builder"
+  },
+  "keywords": [],
+  "author": "Adem Uçar",
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.ademucar.trelloclone",
+    "productName": "TrelloClone",
+    "files": [
+      "electron-main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "electron": "^43.0.0",
+    "electron-builder": "^26.15.3"
+  }
+}

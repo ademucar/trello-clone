@@ -1,0 +1,27 @@
+# ---- GitHub'a YÜKLENMEYECEK dosyalar ----
+# Bu dosyada listelediğim şeyler GitHub'a gönderilmez.
+# Amacım: gereksiz büyük klasörleri ve otomatik üretilen dosyaları repo'dan uzak tutmak.
+
+# node_modules: yüzlerce MB'lık paket klasörü. Herkes "npm install" ile kendisi indirir,
+# o yüzden GitHub'a koymaya gerek yok (repo'yu şişirir).
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+mobile/node_modules/
+
+# Veritabanı dosyam: içinde kullanıcı/görev verileri var, paylaşmaya gerek yok.
+trello.db
+backend/trello.db
+
+# Electron paketleme çıktısı: .exe ve build dosyaları (otomatik üretiliyor).
+dist/
+
+# Vite/React build çıktısı (otomatik üretiliyor).
+frontend/dist/
+
+# Expo/mobil geçici dosyaları.
+mobile/.expo/
+
+# Bilgisayara özel/log dosyaları.
+*.log
+.DS_Store

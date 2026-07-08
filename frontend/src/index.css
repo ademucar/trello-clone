@@ -1,0 +1,67 @@
+/* Tüm elemanların varsayılan boşluklarını sıfırlıyorum ki tasarım tutarlı olsun */
+/* Ayrıca Montserrat fontunu her yere uyguladım (güçlü başlıklar için) */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Koyu tema arka planı: derin lacivert-mor tonlarında bir gradient kullandım */
+body {
+  background: radial-gradient(circle at 20% 20%, #1a1f3a 0%, #0d1025 50%, #060814 100%);
+  min-height: 100vh;
+  color: #e0e0e0;
+}
+
+/* Arka planda hafifçe hareket eden bir ışık efekti ekledim (sitemdeki canlılık için) */
+body::before {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(80, 103, 197, 0.08) 0%, transparent 40%);
+  animation: float 15s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(5%, 5%); }
+}
+
+/* Ana başlığa senin portföy sitendeki gibi parlayan mavi bir efekt verdim */
+h1 {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 25px rgba(123, 159, 255, 0.4);
+}
+
+/* Giriş ekranındaki başlıklar da kalın ve güçlü dursun diye ayarladım */
+h2 {
+  font-weight: 700;
+}
+
+/* Butonların üzerine gelince hafif büyümesi ve parlaması için animasyon (canlılık) */
+button {
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.12);
+}
+
+/* Görev kartlarının belirmesi için yumuşak bir giriş animasyonu */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Input'lardaki placeholder yazılarının rengini yumuşattım */
+input::placeholder {
+  color: #6a6f85;
+}
