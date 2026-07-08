@@ -10,7 +10,7 @@ function createWindow() {
   });
 
   // React sitemi (Vite dev sunucusu) bu pencerede açtım
-  win.loadURL("http://localhost:5173");
+  win.loadURL("https://trello-clone-swart-ten.vercel.app");
 }
 
 // Electron hazır olduğunda pencereyi aç
