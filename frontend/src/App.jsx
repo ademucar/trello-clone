@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 
 // Backend adresimi tek yerde tuttum ki değişirse tek satırda güncelleyebileyim
-const API = "http://localhost:3000";
+const API = "https://trello-clone-pjnd.onrender.com";
 
 // Kanban kolonlarımı burada tanımladım: anahtar, başlık, ikon ve renk
 const COLUMNS = [
