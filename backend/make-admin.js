@@ -22,7 +22,7 @@ const User = sequelize.define("User", {
 });
 
 // Buraya admin yapmak istediğim email'i yazıyorum:
-const email = "adem@test.com";
+const email = "admin@example.com";
 
 // Asıl işlem: o email'e sahip kullanıcının rolünü "admin" yapıyorum
 (async () => {
