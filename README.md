@@ -19,7 +19,7 @@
 
 <br/>
 
-### 🌐 [Canlı Demo →](https://trello-clone-swart-ten.vercel.app)
+
 
 </div>
 
