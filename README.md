@@ -99,51 +99,6 @@ trello-clone/
 └── .gitignore
 ```
 
----
-
-## 🚀 Kurulum ve Çalıştırma (Lokal)
-
-### Gereksinimler
-- [Node.js](https://nodejs.org/) (LTS sürümü)
-- [Expo Go](https://expo.dev/go) (mobil test için)
-- Bir PostgreSQL bağlantı adresi (`.env` içinde `DATABASE_URL`)
-
-### 1️⃣ Backend
-
-```bash
-cd backend
-npm install
-node server.js
-```
-> Sunucu `http://localhost:3000` adresinde çalışır.
-> Not: `backend/.env` dosyasında `DATABASE_URL` tanımlı olmalıdır.
-
-### 2️⃣ Web (Frontend)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-> Uygulama `http://localhost:5173` adresinde açılır.
-
-### 3️⃣ Mobil
-
-```bash
-cd mobile
-npm install
-npx expo start
-```
-> Çıkan QR kodu telefondaki **Expo Go** ile okutun.
-
-### 4️⃣ Masaüstü (Electron)
-
-```bash
-npm install
-npm run electron
-```
-
----
 
 ## 🔌 API Endpoint'leri
 
