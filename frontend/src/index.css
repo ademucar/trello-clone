@@ -8,9 +8,11 @@
 }
 
 /* Koyu tema arka planı: derin lacivert-mor tonlarında bir gradient kullandım */
-body {
+html, body, #root {
   background: radial-gradient(circle at 20% 20%, #1a1f3a 0%, #0d1025 50%, #060814 100%);
+  background-color: #060814; /* Cihaz çok uzaklaştırılırsa diye en koyu renkten zemin sigortası */
   min-height: 100vh;
+  width: 100%;
   color: #e0e0e0;
 }
 
