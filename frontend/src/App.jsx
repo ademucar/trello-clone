@@ -189,6 +189,7 @@ function App() {
       .catch(() => setError("Görev silinemedi."));
   }
 
+
   // ============================================================
   //  EKRAN 1: GİRİŞ YAPILMAMIŞSA -> Giriş / Kayıt ekranı
   // ============================================================
@@ -235,6 +236,23 @@ function App() {
               {isRegister ? "Giriş yap" : "Kayıt ol"}
             </span>
           </div>
+        </div>
+
+        {/* Geliştirici Bilgisi (Ekrana Sabitlendi) */}
+        <div style={{ position: 'fixed', bottom: '24px', left: 0, width: '100%', textAlign: 'center', fontSize: '12px', color: '#64748b', zIndex: 50 }}>
+          <p>
+            Developed by{" "}
+            <a 
+              href="https://ademucar.com.tr/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style={{ color: '#cbd5e1', fontWeight: 500, textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseOver={(e) => e.target.style.color = '#a855f7'} 
+              onMouseOut={(e) => e.target.style.color = '#cbd5e1'}
+            >
+              Adem Uçar
+            </a>
+          </p>
         </div>
       </div>
     );
