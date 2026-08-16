@@ -49,25 +49,34 @@ function postgresOlustur() {
       // Bulut veritabanları (Neon, Render vb.) güvenli (SSL) bağlantı ister
       ssl: { require: true, rejectUnauthorized: false },
     },
-    // Bağlantı havuzu: aynı anda kaç bağlantı açık kalsın.
-    // Vercel'de (serverless) aynı anda birçok kopya uyanabildiği için
-    // kopya başına 2 ile sınırlıyorum; yoksa hepsi birden bağlanıp
-    // veritabanının bağlantı limitini doldurabilir.
-    // Normal sürekli sunucuda ise 5 bağlantı rahatça yetiyor.
-    pool: {
-      max: process.env.VERCEL ? 2 : 5,
-      min: 0,
-      idle: 10000,
-      acquire: 30000,
-    },
+    // Bağlantı havuzu: aynı anda en fazla kaç bağlantı açık kalsın.
+    // Ücretsiz veritabanı planlarında bağlantı limiti düşük olduğu için
+    // küçük tuttum; bu proje için 5 fazlasıyla yetiyor.
+    pool: { max: 5, min: 0, idle: 10000, acquire: 30000 },
     retry: { max: 3 }, // Anlık kopmalarda 3 kez tekrar dene
   });
 }
 
 function sqliteOlustur(dosya) {
+  // Not: SQLite sürücüsü (sqlite3) yerel derlenmiş bir modüldür.
+  // Kendi bilgisayarımda sorunsuz çalışır, ancak Vercel gibi sunucusuz
+  // ortamlarda bulunmayabilir. Bu yüzden burası her zaman try/catch ile çağrılır.
   return new Sequelize({
     dialect: "sqlite",
     storage: dosya,
+    logging: false,
+  });
+}
+
+// Hiçbir veritabanı kurulamadığında kullandığım "boş" örnek.
+// Amacı bağlanmak DEĞİL; sadece model tanımlarının yapılabilmesi ve
+// uygulamanın ayağa kalkabilmesi. İstekler zaten 503 dönecek.
+// Kasıtlı olarak postgres seçtim: 'pg' sürücüsü saf JavaScript olduğu için
+// her ortamda yüklenir. (SQLite'ı yedek yaparsam, sqlite3'ün bulunmadığı
+// ortamda yedeğin kendisi de patlıyor ve uygulama hiç açılmıyordu.)
+function bosOrnekOlustur() {
+  return new Sequelize("postgres://yok:yok@127.0.0.1:5432/yok", {
+    dialect: "postgres",
     logging: false,
   });
 }
@@ -86,15 +95,14 @@ function sqliteOlustur(dosya) {
 let sequelize;
 try {
   sequelize = DATABASE_URL
-    ? postgresOlustur()                              // BULUT: PostgreSQL
+    ? postgresOlustur()                                 // BULUT: PostgreSQL
     : sqliteOlustur(path.join(__dirname, "trello.db")); // YEREL: SQLite dosyası
 } catch (err) {
-  kurulumHatasi = `DATABASE_URL geçersiz: ${err.message}`;
-  console.error("[db] " + kurulumHatasi);
-  // Tabloları tanımlayabilmek ve uygulamayı ayakta tutabilmek için
-  // geçici, hafızada duran bir veritabanı kuruyorum. Buraya veri yazılmaz;
-  // istekler zaten 503 dönecek, amaç sadece açıklayıcı hata verebilmek.
-  sequelize = sqliteOlustur(":memory:");
+  kurulumHatasi = err.message;
+  console.error("[db] KURULUM HATASI: " + kurulumHatasi);
+  // Uygulama yine de ayağa kalksın diye boş bir örnek kuruyorum.
+  // Böylece /health çalışır ve sorunun ne olduğunu söyleyebilir.
+  sequelize = bosOrnekOlustur();
 }
 
 // ============================================================

@@ -129,7 +129,7 @@ const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 //  Render gibi platformlar sunucunun ayakta olup olmadığını buradan anlar.
 //  Ayrıca tarayıcıda adrese girince "Cannot GET /" yerine düzgün cevap görünür.
 // ============================================================
-app.get(["/", "/health"], (req, res) => {
+function saglikDurumu(req, res) {
   res.json({
     status: "ok",
     service: "trello-clone-backend",
@@ -139,7 +139,13 @@ app.get(["/", "/health"], (req, res) => {
     // sunucu loglarını kurcalamadan buradan teşhis edebiliyorum.
     dbError: app.locals.dbError || undefined,
   });
-});
+}
+
+// İki adrese de aynı cevabı veriyorum:
+//  "/"       -> tarayıcıda adrese girince "Cannot GET /" görünmesin
+//  "/health" -> Render'ın sağlık kontrolü buraya bakıyor
+app.get("/", saglikDurumu);
+app.get("/health", saglikDurumu);
 
 // ============================================================
 //  KAYIT OLMA (REGISTER)
