@@ -90,9 +90,12 @@ USER (1) ──────< (∞) PROJECT (1) ──────< (∞) TASK
 ```
 trello-clone/
 ├── backend/            # Node.js + Express + Sequelize API
+│   ├── app.js          # Express uygulaması: tüm API endpoint'leri
+│   ├── server.js       # Yerelde çalıştırmak için sunucu başlatıcı
+│   ├── api/index.js    # Vercel giriş noktası (serverless function)
 │   ├── db.js           # Veritabanı bağlantısı + tablolar (modeller)
-│   ├── server.js       # Tüm API endpoint'leri
 │   ├── make-admin.js   # Bir kullanıcıyı admin yapan yardımcı script
+│   ├── vercel.json     # Tüm adresleri tek fonksiyona yönlendirme
 │   └── .env.example    # Gerekli ortam değişkenlerinin örneği
 ├── frontend/           # React (Vite) web arayüzü
 │   └── src/
@@ -103,7 +106,6 @@ trello-clone/
 │   ├── api.js          # Web'dekiyle aynı istek katmanı
 │   └── App.js
 ├── electron-main.js    # Masaüstü uygulama (Electron) ana dosyası
-├── render.yaml         # Render deploy ayarları (backend + veritabanı)
 └── .gitignore
 ```
 

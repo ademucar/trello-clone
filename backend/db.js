@@ -29,8 +29,16 @@ const sequelize = DATABASE_URL
         ssl: { require: true, rejectUnauthorized: false },
       },
       // Bağlantı havuzu: aynı anda kaç bağlantı açık kalsın.
-      // Ücretsiz planlarda bağlantı limiti düşük olduğu için küçük tuttum.
-      pool: { max: 5, min: 0, idle: 10000, acquire: 30000 },
+      // Vercel'de (serverless) aynı anda birçok kopya uyanabildiği için
+      // kopya başına 2 ile sınırlıyorum; yoksa hepsi birden bağlanıp
+      // veritabanının bağlantı limitini doldurabilir.
+      // Normal sürekli sunucuda ise 5 bağlantı rahatça yetiyor.
+      pool: {
+        max: process.env.VERCEL ? 2 : 5,
+        min: 0,
+        idle: 10000,
+        acquire: 30000,
+      },
       retry: { max: 3 }, // Anlık kopmalarda 3 kez tekrar dene
     })
   : // --- YEREL: SQLite (dosya tabanlı, kurulum gerektirmez) ---
@@ -104,4 +112,35 @@ async function connectDatabase() {
   }
 }
 
-module.exports = { sequelize, User, Project, Task, connectDatabase, dialect };
+// ============================================================
+//  BAĞLANTIYI TEK SEFERE İNDİRME (serverless için önemli)
+//  Vercel'de sunucu sürekli açık durmaz; istek geldikçe uyanır.
+//  Uyanan her kopya bu dosyayı bir kez yükler ve hafızada tutar.
+//  Bu yüzden bağlantıyı SÖZ (promise) olarak saklıyorum: aynı kopyaya
+//  gelen sonraki istekler tekrar bağlanmaya çalışmaz, hazır bağlantıyı
+//  kullanır. Yoksa her istekte yeniden bağlanıp hem yavaşlar hem de
+//  veritabanının bağlantı limitini doldururduk.
+// ============================================================
+let hazirlikSozu = null;
+
+function veritabaniHazirla() {
+  if (!hazirlikSozu) {
+    hazirlikSozu = connectDatabase().catch((err) => {
+      // Bağlantı denemesi tamamen patlarsa sözü sıfırlıyorum ki
+      // bir sonraki istek yeniden deneyebilsin (kalıcı olarak kilitlenmesin)
+      hazirlikSozu = null;
+      return { ok: false, dialect, error: err.message };
+    });
+  }
+  return hazirlikSozu;
+}
+
+module.exports = {
+  sequelize,
+  User,
+  Project,
+  Task,
+  connectDatabase,
+  veritabaniHazirla,
+  dialect,
+};
