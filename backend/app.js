@@ -7,8 +7,8 @@
 //  Sunucuyu başlatma işi ayrı: server.js (yerel) / api/index.js (Vercel).
 //  Veritabanı bağlantısı ve tablolar ise db.js dosyasında.
 // ============================================================
-require("dotenv").config();
-
+// Not: .env okuma işini db.js yapıyor (aşağıda require ediliyor),
+// o yüzden burada tekrar çağırmıyorum.
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
@@ -42,6 +42,7 @@ app.use(express.json());  // Gelen JSON verisini okuyabilmek için
 app.use(async (req, res, next) => {
   const sonuc = await veritabaniHazirla();
   app.locals.dbConnected = sonuc.ok;
+  app.locals.dbError = sonuc.error || null; // Teşhis için hatayı saklıyorum
   next(); // Bağlantı başarısız olsa bile devam ediyorum:
           // /health yine cevap versin, diğerleri anlaşılır 503 dönsün.
 });
@@ -134,6 +135,9 @@ app.get(["/", "/health"], (req, res) => {
     service: "trello-clone-backend",
     database: dialect,
     dbConnected: app.locals.dbConnected === true,
+    // Bağlantı kurulamadıysa sebebini de yazıyorum. Deploy sonrası sorunu
+    // sunucu loglarını kurcalamadan buradan teşhis edebiliyorum.
+    dbError: app.locals.dbError || undefined,
   });
 });
 
@@ -340,6 +344,24 @@ app.use((err, req, res, _next) => {
 
   res.status(500).json({ message: "Sunucuda beklenmedik bir hata oluştu" });
 });
+
+// ============================================================
+//  SÜREÇ SEVİYESİ HATA YAKALAMA
+//  Bunlar app.js'te olmak ZORUNDA. Daha önce sadece server.js'te vardı,
+//  yani Vercel'de hiç devreye girmiyorlardı (orada server.js çalışmıyor).
+//
+//  Neden önemli: Express'in hata yakalayıcısı sadece istek İÇİNDEKİ
+//  hataları yakalar. İstek dışında oluşan bir hata (örn. veritabanı
+//  bağlantısının boşta kopması) yakalanmazsa Node sürecini komple
+//  öldürür; Vercel'de bunun karşılığı FUNCTION_INVOCATION_FAILED olur.
+//  Burada yakalayıp loglayarak fonksiyonun ayakta kalmasını sağlıyorum.
+// ============================================================
+process.on("unhandledRejection", (err) =>
+  console.error("[unhandledRejection]", err?.message || err)
+);
+process.on("uncaughtException", (err) =>
+  console.error("[uncaughtException]", err?.message || err)
+);
 
 // Bu dosya sunucuyu BAŞLATMIYOR, sadece hazır uygulamayı dışa veriyor.
 // Sebebi: iki farklı ortamda çalışması gerekiyor.

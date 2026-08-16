@@ -5,7 +5,7 @@ Bu doküman, projenin kodlanmadan önce nasıl planlandığını ve genel mimari
 Sistem; web, masaüstü ve mobil olmak üzere üç platformda çalışan, buluta dağıtılmış (deploy edilmiş),
 çok platformlu (multi-platform) bir görev yönetim uygulamasıdır.
 
-**Canlı Adres:** https://trello-clone-swart-ten.vercel.app
+**Canlı Adres:** https://trelloclon.vercel.app
 
 ---
 

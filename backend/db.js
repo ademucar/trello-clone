@@ -9,44 +9,93 @@
 //   - yoksa                           -> SQLite (yerel trello.db dosyası)
 //  Amacım: Bulut veritabanı kapansa/süresi dolsa bile proje çalışsın.
 // ============================================================
-require("dotenv").config();
+// .env dosyasını SADECE burada okuyorum. Diğer dosyalar (app.js, server.js,
+// make-admin.js) zaten bu dosyayı çağırdığı için ortam değişkenleri onlara da ulaşıyor.
+// quiet: dotenv'in her yüklenişte bastığı reklam/ipucu satırlarını kapatıyor;
+// bu satırlar sunucu loglarını doldurup gerçek hata mesajını görünmez yapıyordu.
+require("dotenv").config({ quiet: true });
 
 const path = require("path");
 const { Sequelize, DataTypes } = require("sequelize");
 
-const DATABASE_URL = process.env.DATABASE_URL;
+// Adresi temizliyorum: kopyala-yapıştırda başına/sonuna sık sık boşluk,
+// tırnak işareti veya satır sonu bulaşıyor. Bunlar adresi geçersiz kılıyor.
+const DATABASE_URL = String(process.env.DATABASE_URL || "")
+  .trim()
+  .replace(/^['"]|['"]$/g, ""); // baştaki/sondaki tırnakları at
 
 // Hangi veritabanını kullandığımı dışarıya bildiriyorum (log ve /health için)
 const dialect = DATABASE_URL ? "postgres" : "sqlite";
 
-const sequelize = DATABASE_URL
-  ? // --- BULUT: PostgreSQL ---
-    new Sequelize(DATABASE_URL, {
-      dialect: "postgres",
-      logging: false,
-      dialectOptions: {
-        // Render'ın PostgreSQL'i güvenli (SSL) bağlantı ister
-        ssl: { require: true, rejectUnauthorized: false },
-      },
-      // Bağlantı havuzu: aynı anda kaç bağlantı açık kalsın.
-      // Vercel'de (serverless) aynı anda birçok kopya uyanabildiği için
-      // kopya başına 2 ile sınırlıyorum; yoksa hepsi birden bağlanıp
-      // veritabanının bağlantı limitini doldurabilir.
-      // Normal sürekli sunucuda ise 5 bağlantı rahatça yetiyor.
-      pool: {
-        max: process.env.VERCEL ? 2 : 5,
-        min: 0,
-        idle: 10000,
-        acquire: 30000,
-      },
-      retry: { max: 3 }, // Anlık kopmalarda 3 kez tekrar dene
-    })
-  : // --- YEREL: SQLite (dosya tabanlı, kurulum gerektirmez) ---
-    new Sequelize({
-      dialect: "sqlite",
-      storage: path.join(__dirname, "trello.db"),
-      logging: false,
-    });
+// Kurulum sırasında bir sorun çıkarsa sebebini burada saklıyorum.
+// Uygulamayı çökertmek yerine /health üzerinden bildiriyorum.
+let kurulumHatasi = null;
+
+function postgresOlustur() {
+  // Adresin biçimini önceden kontrol ediyorum. Böylece bozuk adreste
+  // anlaşılmaz bir hata yerine ne yapılması gerektiğini söyleyebiliyorum.
+  // (Neon panelinden kopyalarken başına "psql " eklenmesi çok sık oluyor.)
+  if (!/^postgres(ql)?:\/\//i.test(DATABASE_URL)) {
+    throw new Error(
+      'Adres "postgresql://" ile başlamalı. Kopyalarken başına "psql " gibi ' +
+        "bir komut veya tırnak karışmış olabilir."
+    );
+  }
+
+  return new Sequelize(DATABASE_URL, {
+    dialect: "postgres",
+    logging: false,
+    dialectOptions: {
+      // Bulut veritabanları (Neon, Render vb.) güvenli (SSL) bağlantı ister
+      ssl: { require: true, rejectUnauthorized: false },
+    },
+    // Bağlantı havuzu: aynı anda kaç bağlantı açık kalsın.
+    // Vercel'de (serverless) aynı anda birçok kopya uyanabildiği için
+    // kopya başına 2 ile sınırlıyorum; yoksa hepsi birden bağlanıp
+    // veritabanının bağlantı limitini doldurabilir.
+    // Normal sürekli sunucuda ise 5 bağlantı rahatça yetiyor.
+    pool: {
+      max: process.env.VERCEL ? 2 : 5,
+      min: 0,
+      idle: 10000,
+      acquire: 30000,
+    },
+    retry: { max: 3 }, // Anlık kopmalarda 3 kez tekrar dene
+  });
+}
+
+function sqliteOlustur(dosya) {
+  return new Sequelize({
+    dialect: "sqlite",
+    storage: dosya,
+    logging: false,
+  });
+}
+
+// ============================================================
+//  BAĞLANTIYI KUR (çökmeden)
+//  ÖNEMLİ: Bu adım try/catch içinde olmalı. Bozuk bir DATABASE_URL,
+//  Sequelize'i daha uygulama açılırken patlatıyor ve bu hata modül
+//  seviyesinde olduğu için tüm uygulamayı yüklenemez hale getiriyordu.
+//  Vercel'de bunun görüntüsü, hiçbir açıklama içermeyen
+//  FUNCTION_INVOCATION_FAILED hatasıydı.
+//
+//  Artık hatayı yakalayıp saklıyorum: uygulama ayağa kalkıyor,
+//  /health sorunun ne olduğunu söylüyor, veri işlemleri ise 503 dönüyor.
+// ============================================================
+let sequelize;
+try {
+  sequelize = DATABASE_URL
+    ? postgresOlustur()                              // BULUT: PostgreSQL
+    : sqliteOlustur(path.join(__dirname, "trello.db")); // YEREL: SQLite dosyası
+} catch (err) {
+  kurulumHatasi = `DATABASE_URL geçersiz: ${err.message}`;
+  console.error("[db] " + kurulumHatasi);
+  // Tabloları tanımlayabilmek ve uygulamayı ayakta tutabilmek için
+  // geçici, hafızada duran bir veritabanı kuruyorum. Buraya veri yazılmaz;
+  // istekler zaten 503 dönecek, amaç sadece açıklayıcı hata verebilmek.
+  sequelize = sqliteOlustur(":memory:");
+}
 
 // ============================================================
 //  MODELLER (Veritabanı Tabloları)
@@ -101,6 +150,12 @@ Task.belongsTo(User, { foreignKey: "user_id" });
 //  (Eski koddaki çökme hatasının kaynağı tam olarak buydu.)
 // ============================================================
 async function connectDatabase() {
+  // Adres en baştan bozuksa bağlanmayı denemenin anlamı yok.
+  // Sebebi doğrudan bildiriyorum ki /health sorunu açıkça göstersin.
+  if (kurulumHatasi) {
+    return { ok: false, dialect, error: kurulumHatasi };
+  }
+
   try {
     await sequelize.authenticate(); // Önce gerçekten bağlanabiliyor muyum, onu test ediyorum
     await sequelize.sync();         // Tablolar yoksa oluşturuyorum

@@ -5,8 +5,9 @@
 // ============================================================
 const { app, BrowserWindow, shell } = require("electron");
 
-// Yüklenecek adres. İleride değişirse tek yerden düzenleyebileyim diye sabit yaptım.
-const SITE_ADRESI = "https://trello-clone-swart-ten.vercel.app";
+// Yüklenecek adres: web sürümünün canlı adresi.
+// İleride değişirse tek yerden düzenleyebileyim diye sabit yaptım.
+const SITE_ADRESI = "https://trelloclon.vercel.app";
 
 let win = null;
 

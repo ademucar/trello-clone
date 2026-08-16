@@ -6,8 +6,8 @@
 //  Uygulamanın kendisi app.js'te; burada sadece onu bir porta bağlıyorum.
 //  (Vercel'de ise app.js'i api/index.js çağırıyor, orada listen yapılmaz.)
 // ============================================================
-require("dotenv").config();
-
+// .env okuma işini db.js yapıyor (app.js onu require ediyor),
+// o yüzden burada tekrar çağırmıyorum.
 const app = require("./app");
 const { veritabaniHazirla, dialect } = require("./db");
 
@@ -29,8 +29,7 @@ async function start() {
   });
 }
 
-// Beklenmedik bir hata sürecin sessizce ölmesine yol açmasın; en azından loglansın
-process.on("unhandledRejection", (err) => console.error("[unhandledRejection]", err?.message || err));
-process.on("uncaughtException", (err) => console.error("[uncaughtException]", err?.message || err));
+// Not: unhandledRejection / uncaughtException yakalayıcıları app.js'te tanımlı
+// (orada olmaları gerekiyor ki Vercel'de de devrede olsunlar).
 
 start();
