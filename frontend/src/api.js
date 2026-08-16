@@ -12,7 +12,7 @@
 // Adres önce .env dosyasındaki VITE_API_URL'den okunur, yoksa canlı sunucu kullanılır.
 // Böylece yerelde çalışırken backend adresini kod değiştirmeden ayarlayabiliyorum.
 export const API =
-  import.meta.env.VITE_API_URL || "https://trello-clone-pjnd.onrender.com";
+  import.meta.env.VITE_API_URL || "https://trello-clone-backend-hof7.onrender.com";
 
 // Giriş bilgisini tarayıcı hafızasında saklıyorum ki sayfa yenilenince
 // oturum kapanmasın (eski sürümde her F5'te tekrar giriş gerekiyordu).

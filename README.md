@@ -20,7 +20,7 @@ Kullanıcılar proje oluşturur, her projeye görev ekler ve görevleri durumlar
 | Platform | Adres |
 |----------|-------|
 | 🌐 **Web (Frontend)** | [trelloclon.vercel.app](https://trelloclon.vercel.app) |
-| ⚙️ **API (Backend)** | [trello-clone-pjnd.onrender.com](https://trello-clone-pjnd.onrender.com) |
+| ⚙️ **API (Backend)** | [trello-clone-backend-hof7.onrender.com](https://trello-clone-backend-hof7.onrender.com) |
 
 > ℹ️ Backend ücretsiz sunucuda barındığı için, uzun süre kullanılmadığında "uyku" moduna geçer. İlk istekte ~30-50 saniye gecikme olabilir; sonra normal hızına döner.
 

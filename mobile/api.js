@@ -13,7 +13,7 @@
 // Backend adresim (web ve masaüstü sürümüyle aynı sunucu).
 // Yerelde test ederken telefonun bilgisayara ulaşabilmesi için
 // "localhost" değil, bilgisayarın yerel IP'si yazılmalı (örn. http://192.168.1.5:3000)
-export const API = "https://trello-clone-pjnd.onrender.com";
+export const API = "https://trello-clone-backend-hof7.onrender.com";
 
 export class ApiHatasi extends Error {
   constructor(mesaj, durum) {
