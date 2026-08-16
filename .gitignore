@@ -28,3 +28,9 @@ mobile/.expo/
 
 .env
 backend/.env
+
+# Yerel ortam ayarları (frontend'in hangi backend'e bağlanacağı gibi).
+# .env.example dosyaları örnek olarak repo'da kalır, gerçek değerler kalmaz.
+.env.local
+frontend/.env.local
+!.env.example

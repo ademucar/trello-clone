@@ -1,17 +1,16 @@
 // ============================================================
 //  TRELLO CLONE - MOBİL UYGULAMA
-//  React Native + Expo ile yazdım (iPhone'da çalışıyor).
+//  React Native + Expo ile yazdım.
 //  Web sürümüyle AYNI mantık: Giriş -> Projeler -> Seçili Projenin Görevleri.
 //  Aynı backend'e bağlanıyor, yani web'de eklediğim veriler burada da görünür.
+//  Backend ile konuşma işi api.js dosyasında; burada sadece ekran var.
 // ============================================================
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, SafeAreaView, Alert,
+  StyleSheet, SafeAreaView, Alert, ActivityIndicator,
 } from "react-native";
-
-//Deploy ettiğim siteye bağladım.
-const API = "https://trello-clone-pjnd.onrender.com";
+import { istek } from "./api";
 
 // Kanban kolonlarım (web'deki ile aynı: 3 durum)
 const COLUMNS = [
@@ -21,17 +20,14 @@ const COLUMNS = [
 ];
 
 export default function App() {
-  // --- Kullanıcı bilgileri (state) ---
-  const [token, setToken] = useState(null);
-  const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState("");
+  // --- Oturum bilgisi ---
+  const [oturum, setOturum] = useState(null);
+  const token = oturum?.token || null;
 
-  // --- Proje state'leri ---
+  // --- Proje ve görev state'leri ---
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [newProjectTitle, setNewProjectTitle] = useState("");
-
-  // --- Görev state'leri ---
   const [tasks, setTasks] = useState([]);
   const [newTitle, setNewTitle] = useState("");
 
@@ -41,122 +37,155 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Giriş yapınca projeleri otomatik çekiyorum
-  useEffect(() => { if (token) fetchProjects(); }, [token]);
-  // Proje seçilince o projenin görevlerini otomatik çekiyorum
-  useEffect(() => { if (selectedProject) fetchTasks(); }, [selectedProject]);
+  // Bir istek sürüyor mu? (butonları kilitlemek ve dönen çark göstermek için)
+  const [yukleniyor, setYukleniyor] = useState(false);
 
-  // Projeleri backend'den çekiyorum.
-  // .catch: Backend kapalıysa veya telefon aynı Wi-Fi'da değilse uyarı gösteriyorum.
-  function fetchProjects() {
-    fetch(`${API}/projects`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => res.json())
-      .then((data) => setProjects(data))
-      .catch(() => Alert.alert("Hata", "Sunucuya bağlanılamadı"));
-  }
+  // Çıkış: tüm bilgileri temizliyorum
+  const handleLogout = useCallback(() => {
+    setOturum(null);
+    setProjects([]);
+    setSelectedProject(null);
+    setTasks([]);
+    setEmail("");
+    setPassword("");
+    setName("");
+  }, []);
 
-  // Seçili projenin görevlerini çekiyorum
-  function fetchTasks() {
-    fetch(`${API}/projects/${selectedProject.id}/tasks`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch(() => Alert.alert("Hata", "Görevler yüklenemedi"));
-  }
-
-  // Kayıt olma
-  function handleRegister() {
-    fetch(`${API}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.message === "Kayıt başarılı") {
-          setIsRegister(false);
-          Alert.alert("Başarılı", "Kayıt tamam, şimdi giriş yap");
+  // ============================================================
+  //  TÜM İSTEKLERİN GEÇTİĞİ ORTAK NOKTA
+  //  Yükleniyor durumu, hata uyarısı ve token süresi dolunca
+  //  otomatik çıkış işlerini tek yerde hallediyorum.
+  // ============================================================
+  const cagir = useCallback(
+    async (yol, secenek = {}) => {
+      setYukleniyor(true);
+      try {
+        return await istek(yol, { ...secenek, token });
+      } catch (hata) {
+        if (hata.durum === 401 && token) {
+          handleLogout();
+          Alert.alert("Oturum sona erdi", "Lütfen tekrar giriş yap.");
         } else {
-          Alert.alert("Hata", data.message); // örn. "Bu email zaten kayıtlı"
+          Alert.alert("Hata", hata.message);
         }
-      })
-      .catch(() => Alert.alert("Hata", "Sunucuya bağlanılamadı"));
-  }
+        return null;
+      } finally {
+        setYukleniyor(false);
+      }
+    },
+    [token, handleLogout]
+  );
 
-  // Giriş yapma
-  function handleLogin() {
-    fetch(`${API}/auth/login`, {
+  // ---------- VERİ ÇEKME ----------
+
+  const fetchProjects = useCallback(async () => {
+    const veri = await cagir("/projects");
+    if (Array.isArray(veri)) setProjects(veri);
+  }, [cagir]);
+
+  const fetchTasks = useCallback(async () => {
+    if (!selectedProject) return;
+    const veri = await cagir(`/projects/${selectedProject.id}/tasks`);
+    if (Array.isArray(veri)) setTasks(veri);
+  }, [cagir, selectedProject]);
+
+  useEffect(() => {
+    if (token) fetchProjects();
+  }, [token, fetchProjects]);
+
+  useEffect(() => {
+    if (selectedProject) fetchTasks();
+    else setTasks([]);
+  }, [selectedProject, fetchTasks]);
+
+  // ---------- GİRİŞ / KAYIT ----------
+
+  async function handleRegister() {
+    if (!name.trim() || !email.trim() || !password) {
+      Alert.alert("Eksik bilgi", "Lütfen tüm alanları doldur.");
+      return;
+    }
+    const veri = await cagir("/auth/register", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.token) {
-          // Giriş başarılıysa token, isim ve rolü hafızaya alıyorum
-          setToken(data.token);
-          setUserName(data.name);
-          setUserRole(data.role);
-        } else {
-          Alert.alert("Hata", data.message); // "Email veya şifre hatalı"
-        }
-      })
-      .catch(() => Alert.alert("Hata", "Sunucuya bağlanılamadı"));
+      body: { name, email, password },
+    });
+    if (veri) {
+      setIsRegister(false);
+      setPassword("");
+      Alert.alert("Başarılı", "Kayıt tamam, şimdi giriş yap");
+    }
   }
 
-  // Çıkış yapınca tüm bilgileri temizliyorum
-  function handleLogout() {
-    setToken(null); setUserName(""); setUserRole("");
-    setProjects([]); setSelectedProject(null); setTasks([]);
-    setEmail(""); setPassword(""); setName("");
-  }
-
-  // Proje ekleme
-  function addProject() {
-    if (!newProjectTitle.trim()) return; // Boş isim engeli
-    fetch(`${API}/projects`, {
+  async function handleLogin() {
+    if (!email.trim() || !password) {
+      Alert.alert("Eksik bilgi", "Email ve şifre gerekli.");
+      return;
+    }
+    const veri = await cagir("/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ title: newProjectTitle }),
-    })
-      .then(() => { setNewProjectTitle(""); fetchProjects(); })
-      .catch(() => Alert.alert("Hata", "Proje oluşturulamadı"));
+      body: { email, password },
+    });
+    if (veri?.token) {
+      setOturum({ token: veri.token, name: veri.name, role: veri.role });
+      setPassword("");
+    }
   }
 
-  // Proje silme
+  // ---------- PROJE İŞLEMLERİ ----------
+
+  async function addProject() {
+    const baslik = newProjectTitle.trim();
+    if (!baslik) return;
+
+    const veri = await cagir("/projects", { method: "POST", body: { title: baslik } });
+    if (veri) {
+      setNewProjectTitle("");
+      fetchProjects();
+    }
+  }
+
   function deleteProject(id) {
-    fetch(`${API}/projects/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
-      .then(() => fetchProjects())
-      .catch(() => Alert.alert("Hata", "Proje silinemedi"));
+    // Yanlışlıkla silmeyi önlemek için onay soruyorum
+    Alert.alert("Projeyi sil", "Bu proje ve içindeki tüm görevler silinecek. Emin misin?", [
+      { text: "Vazgeç", style: "cancel" },
+      {
+        text: "Sil",
+        style: "destructive",
+        onPress: async () => {
+          const veri = await cagir(`/projects/${id}`, { method: "DELETE" });
+          if (veri) fetchProjects();
+        },
+      },
+    ]);
   }
 
-  // Görev ekleme
-  function addTask() {
-    if (!newTitle.trim()) return;
-    fetch(`${API}/projects/${selectedProject.id}/tasks`, {
+  // ---------- GÖREV İŞLEMLERİ ----------
+
+  async function addTask() {
+    const baslik = newTitle.trim();
+    if (!baslik) return;
+
+    const veri = await cagir(`/projects/${selectedProject.id}/tasks`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ title: newTitle, status: "todo" }),
-    })
-      .then(() => { setNewTitle(""); fetchTasks(); })
-      .catch(() => Alert.alert("Hata", "Görev eklenemedi"));
+      body: { title: baslik, status: "todo" },
+    });
+    if (veri) {
+      setNewTitle("");
+      fetchTasks();
+    }
   }
 
-  // Görev taşıma (durum değiştirme)
-  function moveTask(id, newStatus) {
-    fetch(`${API}/tasks/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status: newStatus }),
-    })
-      .then(() => fetchTasks())
-      .catch(() => Alert.alert("Hata", "Görev taşınamadı"));
+  async function moveTask(id, newStatus) {
+    // Görevi önce ekranda anında taşıyorum (kullanıcı beklemesin),
+    // sonra sunucudan gelen gerçek listeyle tazeliyorum.
+    setTasks((eski) => eski.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
+    await cagir(`/tasks/${id}`, { method: "PUT", body: { status: newStatus } });
+    fetchTasks();
   }
 
-  // Görev silme
-  function deleteTask(id) {
-    fetch(`${API}/tasks/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
-      .then(() => fetchTasks())
-      .catch(() => Alert.alert("Hata", "Görev silinemedi"));
+  async function deleteTask(id) {
+    const veri = await cagir(`/tasks/${id}`, { method: "DELETE" });
+    if (veri) fetchTasks();
   }
 
   // ============================================================
@@ -165,7 +194,6 @@ export default function App() {
   if (!token) {
     return (
       <SafeAreaView style={styles.container}>
-        {/* ScrollView: içerik taşarsa kaydırılabilsin diye */}
         <ScrollView contentContainerStyle={styles.loginWrap}>
           <Text style={styles.logo}>🗂️</Text>
           <Text style={styles.title}>Trello Clone</Text>
@@ -173,28 +201,42 @@ export default function App() {
             {isRegister ? "Yeni hesap oluştur" : "Devam etmek için giriş yap"}
           </Text>
 
-          {/* Kayıt modundaysa ad-soyad kutusu da çıksın */}
           {isRegister && (
             <TextInput style={styles.input} placeholder="Ad Soyad" placeholderTextColor="#888"
               value={name} onChangeText={setName} />
           )}
           {/* autoCapitalize="none": email yazarken ilk harfi büyük yapmasın */}
           <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#888"
-            autoCapitalize="none" value={email} onChangeText={setEmail} />
+            autoCapitalize="none" keyboardType="email-address" autoCorrect={false}
+            value={email} onChangeText={setEmail} />
           {/* secureTextEntry: şifreyi nokta nokta gizli göster */}
           <TextInput style={styles.input} placeholder="Şifre" placeholderTextColor="#888"
             secureTextEntry value={password} onChangeText={setPassword} />
 
-          <TouchableOpacity style={styles.primaryBtn} onPress={isRegister ? handleRegister : handleLogin}>
-            <Text style={styles.primaryBtnText}>{isRegister ? "Kayıt Ol" : "Giriş Yap"}</Text>
+          {/* İstek sürerken butonu kilitliyorum: üst üste tıklanıp
+              aynı kayıt iki kez gönderilmesin */}
+          <TouchableOpacity
+            style={[styles.primaryBtn, yukleniyor && styles.btnPasif]}
+            disabled={yukleniyor}
+            onPress={isRegister ? handleRegister : handleLogin}
+          >
+            {yukleniyor ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.primaryBtnText}>{isRegister ? "Kayıt Ol" : "Giriş Yap"}</Text>
+            )}
           </TouchableOpacity>
 
-          {/* Giriş / kayıt arasında geçiş */}
           <TouchableOpacity onPress={() => setIsRegister(!isRegister)}>
             <Text style={styles.link}>
               {isRegister ? "Zaten hesabın var mı? Giriş yap" : "Hesabın yok mu? Kayıt ol"}
             </Text>
           </TouchableOpacity>
+
+          {/* Render'ın ücretsiz sunucusu uykudaysa ilk giriş uzun sürebiliyor */}
+          {yukleniyor && (
+            <Text style={styles.bilgi}>Sunucu uyanıyor, biraz sürebilir...</Text>
+          )}
         </ScrollView>
       </SafeAreaView>
     );
@@ -206,38 +248,41 @@ export default function App() {
   if (!selectedProject) {
     return (
       <SafeAreaView style={styles.container}>
-        {/* Üst bar: başlık + çıkış */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>🗂️ Projelerim</Text>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <Text style={styles.logoutText}>Çıkış</Text>
           </TouchableOpacity>
         </View>
-        {/* Karşılama + admin ise rol bilgisi */}
         <Text style={styles.welcome}>
-          Merhaba, {userName}{userRole === "admin" ? "  (ADMIN)" : ""}
+          Merhaba, {oturum.name}{oturum.role === "admin" ? "  (ADMIN)" : ""}
         </Text>
 
-        {/* Yeni proje ekleme satırı */}
         <View style={styles.addRow}>
           <TextInput style={styles.addInput} placeholder="Yeni proje adı..." placeholderTextColor="#888"
-            value={newProjectTitle} onChangeText={setNewProjectTitle} />
-          <TouchableOpacity style={styles.addBtn} onPress={addProject}>
+            value={newProjectTitle} onChangeText={setNewProjectTitle}
+            onSubmitEditing={addProject} />
+          <TouchableOpacity style={[styles.addBtn, yukleniyor && styles.btnPasif]}
+            disabled={yukleniyor} onPress={addProject}>
             <Text style={styles.addBtnText}>+ Proje</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView>
-          {projects.length === 0 && <Text style={styles.empty}>Henüz proje yok.</Text>}
-          {/* Projeleri kart olarak listeliyorum */}
+          {yukleniyor && projects.length === 0 && (
+            <ActivityIndicator color="#7b9fff" style={{ marginTop: 20 }} />
+          )}
+          {!yukleniyor && projects.length === 0 && (
+            <Text style={styles.empty}>Henüz proje yok.</Text>
+          )}
+
           {projects.map((project) => (
             <TouchableOpacity key={project.id} style={styles.projectCard}
               onPress={() => setSelectedProject(project)}>
               <Text style={styles.projectTitle}>📁 {project.title}</Text>
               {/* Admin isem sahibini de gösteriyorum */}
               {project.owner && <Text style={styles.owner}>👤 {project.owner}</Text>}
-              <TouchableOpacity style={styles.deleteBtn}
-                onPress={() => deleteProject(project.id)}>
+              <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteProject(project.id)}>
                 <Text style={styles.deleteText}>Sil</Text>
               </TouchableOpacity>
             </TouchableOpacity>
@@ -252,7 +297,6 @@ export default function App() {
   // ============================================================
   return (
     <SafeAreaView style={styles.container}>
-      {/* Üst bar: geri dön + çıkış */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setSelectedProject(null)}>
           <Text style={styles.backText}>← Projeler</Text>
@@ -263,11 +307,11 @@ export default function App() {
       </View>
       <Text style={styles.projectHeader}>📁 {selectedProject.title}</Text>
 
-      {/* Görev ekleme satırı */}
       <View style={styles.addRow}>
         <TextInput style={styles.addInput} placeholder="Yeni görev..." placeholderTextColor="#888"
-          value={newTitle} onChangeText={setNewTitle} />
-        <TouchableOpacity style={styles.addBtn} onPress={addTask}>
+          value={newTitle} onChangeText={setNewTitle} onSubmitEditing={addTask} />
+        <TouchableOpacity style={[styles.addBtn, yukleniyor && styles.btnPasif]}
+          disabled={yukleniyor} onPress={addTask}>
           <Text style={styles.addBtnText}>+ Ekle</Text>
         </TouchableOpacity>
       </View>
@@ -278,7 +322,6 @@ export default function App() {
           const colTasks = tasks.filter((t) => t.status === col.key);
           return (
             <View key={col.key} style={styles.column}>
-              {/* Kolon başlığı + görev sayısı */}
               <View style={[styles.columnHeader, { borderBottomColor: col.color }]}>
                 <Text style={styles.columnTitle}>{col.title}</Text>
                 <View style={[styles.badge, { backgroundColor: col.color }]}>
@@ -286,7 +329,7 @@ export default function App() {
                 </View>
               </View>
               {colTasks.length === 0 && <Text style={styles.empty}>Görev yok</Text>}
-              {/* Görev kartları */}
+
               {colTasks.map((task) => (
                 <View key={task.id} style={styles.taskCard}>
                   <Text style={styles.taskTitle}>{task.title}</Text>
@@ -298,7 +341,6 @@ export default function App() {
                         <Text style={styles.moveText}>{c.title}</Text>
                       </TouchableOpacity>
                     ))}
-                    {/* Silme butonu */}
                     <TouchableOpacity style={styles.taskDelete} onPress={() => deleteTask(task.id)}>
                       <Text style={styles.taskDeleteText}>Sil</Text>
                     </TouchableOpacity>
@@ -324,6 +366,8 @@ const styles = StyleSheet.create({
   input: { width: "100%", backgroundColor: "#1a1f3a", color: "#fff", padding: 14, borderRadius: 10, marginBottom: 14, borderWidth: 1, borderColor: "#2a2f4a" },
   primaryBtn: { width: "100%", backgroundColor: "#5067c5", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 6, marginBottom: 16 },
   primaryBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  btnPasif: { opacity: 0.55 },
+  bilgi: { color: "#7b9fff", fontSize: 13, marginTop: 16, textAlign: "center" },
   link: { color: "#7b9fff", fontWeight: "bold" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   headerTitle: { fontSize: 22, fontWeight: "bold", color: "#fff" },

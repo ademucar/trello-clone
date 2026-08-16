@@ -1,14 +1,13 @@
 // ============================================================
 //  TRELLO CLONE - WEB ARAYÜZÜ (Frontend)
 //  React ile yazdım. Akış: Giriş -> Proje Listesi -> Seçili Projenin Kanban Panosu
-//  Backend'e "fetch" ile istek atıp verileri alıyorum/gönderiyorum.
+//  Backend ile konuşma işini api.js dosyasına ayırdım, burada sadece ekran var.
 // ============================================================
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { istek, oturumOku, oturumYaz } from "./api";
+import "./App.css";
 
-//Deploy ettiğim siteye bağladım.
-const API = "https://trello-clone-pjnd.onrender.com";
-
-// Kanban kolonlarımı burada tanımladım: anahtar, başlık, ikon ve renk
+// Kanban kolonlarım: anahtar, başlık, ikon ve renk
 const COLUMNS = [
   { key: "todo", title: "Yapılacak", icon: "📋", color: "#eb5a46" },
   { key: "doing", title: "Yapılıyor", icon: "⚙️", color: "#f2d600" },
@@ -16,107 +15,34 @@ const COLUMNS = [
 ];
 
 function App() {
-  // --- Kullanıcı bilgilerini tutan state'ler ---
-  // (state = React'te ekranda değişebilen veri; değişince ekran otomatik yenilenir)
-  const [token, setToken] = useState(null);     // Giriş yapınca gelen kimlik kartı (token)
-  const [userName, setUserName] = useState(""); // Kullanıcının adı
-  const [userRole, setUserRole] = useState(""); // Rolü (admin / user)
+  // --- Oturum bilgisi ---
+  // Başlangıç değerini localStorage'dan okuyorum: sayfa yenilenince
+  // kullanıcı giriş ekranına düşmüyor, kaldığı yerden devam ediyor.
+  const [oturum, setOturum] = useState(() => oturumOku());
+  const token = oturum?.token || null;
 
-  // --- Projelerle ilgili state'ler ---
-  const [projects, setProjects] = useState([]);              // Kullanıcının projeleri
-  const [selectedProject, setSelectedProject] = useState(null); // Şu an açık olan proje
-  const [newProjectTitle, setNewProjectTitle] = useState("");   // Yeni proje adı kutusu
+  // --- Projeler ve görevler ---
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [newProjectTitle, setNewProjectTitle] = useState("");
+  const [tasks, setTasks] = useState([]);
+  const [newTitle, setNewTitle] = useState("");
 
-  // --- Görevlerle ilgili state'ler ---
-  const [tasks, setTasks] = useState([]);       // Seçili projenin görevleri
-  const [newTitle, setNewTitle] = useState(""); // Yeni görev adı kutusu
-
-  // --- Giriş/Kayıt formu state'leri ---
-  const [isRegister, setIsRegister] = useState(false); // Kayıt modunda mıyız?
+  // --- Giriş/Kayıt formu ---
+  const [isRegister, setIsRegister] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");       // Ekranda gösterilecek hata/bilgi mesajı
-  const [focused, setFocused] = useState("");   // Hangi kutuya tıklandı (parlama efekti için)
 
-  // Kullanıcı giriş yapınca (token gelince) projelerini otomatik çekiyorum
-  useEffect(() => {
-    if (token) fetchProjects();
-  }, [token]);
+  // --- Ekran durumu ---
+  const [error, setError] = useState("");       // Kullanıcıya gösterilen mesaj
+  const [yukleniyor, setYukleniyor] = useState(false); // Bir istek sürüyor mu?
+  const [yavas, setYavas] = useState(false);    // İstek uzun sürüyor mu? (sunucu uyanıyor)
 
-  // Bir proje seçilince o projenin görevlerini otomatik çekiyorum
-  useEffect(() => {
-    if (selectedProject) fetchTasks();
-  }, [selectedProject]);
-
-  // Kullanıcının projelerini backend'den çeken fonksiyonum.
-  // .catch: Eğer backend kapalıysa veya bağlantı koparsa, kullanıcıya uyarı gösteriyorum.
-  function fetchProjects() {
-    fetch(`${API}/projects`, {
-      headers: { Authorization: `Bearer ${token}` }, // Token'ı gönderiyorum ki backend beni tanısın
-    })
-      .then((res) => res.json())
-      .then((data) => setProjects(data))
-      .catch(() => setError("Sunucuya bağlanılamadı. Backend çalışıyor mu?"));
-  }
-
-  // Seçili projenin görevlerini çeken fonksiyonum
-  function fetchTasks() {
-    fetch(`${API}/projects/${selectedProject.id}/tasks`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => setTasks(data))
-      .catch(() => setError("Görevler yüklenemedi."));
-  }
-
-  // Kayıt olma işlemim
-  function handleRegister() {
-    setError("");
-    fetch(`${API}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }), // Formu JSON olarak gönderiyorum
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.message === "Kayıt başarılı") {
-          setIsRegister(false); // Kayıt olunca giriş ekranına dön
-          setError("Kayıt başarılı! Şimdi giriş yapabilirsin.");
-        } else {
-          setError(data.message); // Backend'den gelen hatayı göster (örn. "email zaten kayıtlı")
-        }
-      })
-      .catch(() => setError("Sunucuya bağlanılamadı."));
-  }
-
-  // Giriş yapma işlemim
-  function handleLogin() {
-    setError("");
-    fetch(`${API}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.token) {
-          // Giriş başarılıysa token, isim ve rolü hafızaya alıyorum
-          setToken(data.token);
-          setUserName(data.name);
-          setUserRole(data.role);
-        } else {
-          setError(data.message); // "Email veya şifre hatalı" gibi
-        }
-      })
-      .catch(() => setError("Sunucuya bağlanılamadı."));
-  }
-
-  // Çıkış yapınca tüm bilgileri temizliyorum (güvenlik + temiz başlangıç)
-  function handleLogout() {
-    setToken(null);
-    setUserName("");
-    setUserRole("");
+  // Çıkış: tüm bilgileri hem ekrandan hem tarayıcı hafızasından siliyorum
+  const handleLogout = useCallback(() => {
+    oturumYaz(null);
+    setOturum(null);
     setProjects([]);
     setSelectedProject(null);
     setTasks([]);
@@ -124,132 +50,227 @@ function App() {
     setPassword("");
     setName("");
     setError("");
-  }
+  }, []);
 
-  // Yeni proje oluşturma
-  function addProject() {
-    if (!newProjectTitle.trim()) return; // Boş isimle proje oluşturmayı engelliyorum
-    fetch(`${API}/projects`, {
+  // ============================================================
+  //  TÜM İSTEKLERİN GEÇTİĞİ ORTAK NOKTA
+  //  Yükleniyor durumu, hata gösterimi ve 401'de otomatik çıkış
+  //  gibi işleri burada bir kez hallediyorum.
+  // ============================================================
+  const cagir = useCallback(
+    async (yol, secenek = {}) => {
+      setError("");
+      setYukleniyor(true);
+
+      // Render'ın ücretsiz sunucusu uykudaysa ilk istek ~50 saniye sürebiliyor.
+      // 4 saniyeyi geçerse kullanıcıya "bekle, uyanıyor" diye bilgi veriyorum;
+      // yoksa ekran donmuş sanılıyor.
+      const sayac = setTimeout(() => setYavas(true), 4000);
+
+      try {
+        return await istek(yol, { ...secenek, token });
+      } catch (hata) {
+        // Token süresi dolmuş veya geçersizse kullanıcıyı giriş ekranına alıyorum
+        if (hata.durum === 401 && token) {
+          handleLogout();
+          setError("Oturumun sona erdi, lütfen tekrar giriş yap.");
+        } else {
+          setError(hata.message);
+        }
+        return null; // Çağıran taraf null görünce işlemi sessizce bırakır
+      } finally {
+        clearTimeout(sayac);
+        setYavas(false);
+        setYukleniyor(false);
+      }
+    },
+    [token, handleLogout]
+  );
+
+  // ---------- VERİ ÇEKME ----------
+
+  const fetchProjects = useCallback(async () => {
+    const veri = await cagir("/projects");
+    // Array.isArray kontrolü: sunucu beklenmedik bir şey dönerse .map() patlamasın
+    if (Array.isArray(veri)) setProjects(veri);
+  }, [cagir]);
+
+  const fetchTasks = useCallback(async () => {
+    if (!selectedProject) return;
+    const veri = await cagir(`/projects/${selectedProject.id}/tasks`);
+    if (Array.isArray(veri)) setTasks(veri);
+  }, [cagir, selectedProject]);
+
+  // Giriş yapılınca projeleri, proje seçilince görevleri otomatik çekiyorum
+  useEffect(() => {
+    if (token) fetchProjects();
+  }, [token, fetchProjects]);
+
+  useEffect(() => {
+    if (selectedProject) fetchTasks();
+    else setTasks([]); // Projeden çıkınca eski görevler ekranda kalmasın
+  }, [selectedProject, fetchTasks]);
+
+  // ---------- GİRİŞ / KAYIT ----------
+
+  async function handleRegister() {
+    if (!name.trim() || !email.trim() || !password) {
+      setError("Lütfen tüm alanları doldur.");
+      return;
+    }
+    const veri = await cagir("/auth/register", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ title: newProjectTitle }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setNewProjectTitle("");  // Kutuyu temizle
-        fetchProjects();         // Listeyi yenile
-      })
-      .catch(() => setError("Proje oluşturulamadı."));
+      body: { name, email, password },
+    });
+    if (veri) {
+      setIsRegister(false);   // Kayıt olunca giriş ekranına dön
+      setPassword("");
+      setError("Kayıt başarılı! Şimdi giriş yapabilirsin.");
+    }
   }
 
-  // Proje silme
-  function deleteProject(id) {
-    fetch(`${API}/projects/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(() => fetchProjects())
-      .catch(() => setError("Proje silinemedi."));
-  }
-
-  // Seçili projeye görev ekleme
-  function addTask() {
-    if (!newTitle.trim()) return;
-    fetch(`${API}/projects/${selectedProject.id}/tasks`, {
+  async function handleLogin() {
+    if (!email.trim() || !password) {
+      setError("Email ve şifre gerekli.");
+      return;
+    }
+    const veri = await cagir("/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ title: newTitle, status: "todo" }),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setNewTitle("");
-        fetchTasks();
-      })
-      .catch(() => setError("Görev eklenemedi."));
+      body: { email, password },
+    });
+    if (veri?.token) {
+      const yeni = { token: veri.token, name: veri.name, role: veri.role };
+      oturumYaz(yeni); // Tarayıcıya kaydet ki yenilemede kaybolmasın
+      setOturum(yeni);
+      setPassword("");
+    }
   }
 
-  // Görevi başka kolona taşıma (durumunu değiştirme: todo/doing/done)
-  function moveTask(id, newStatus) {
-    fetch(`${API}/tasks/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status: newStatus }),
-    })
-      .then(() => fetchTasks())
-      .catch(() => setError("Görev taşınamadı."));
+  // ---------- PROJE İŞLEMLERİ ----------
+
+  async function addProject() {
+    const baslik = newProjectTitle.trim();
+    if (!baslik) return; // Boş isimle proje oluşturmayı engelliyorum
+
+    const veri = await cagir("/projects", { method: "POST", body: { title: baslik } });
+    if (veri) {
+      setNewProjectTitle("");
+      fetchProjects();
+    }
   }
 
-  // Görev silme
-  function deleteTask(id) {
-    fetch(`${API}/tasks/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(() => fetchTasks())
-      .catch(() => setError("Görev silinemedi."));
+  async function deleteProject(id) {
+    // Yanlışlıkla tıklamada proje ve tüm görevleri gitmesin diye onay soruyorum
+    if (!window.confirm("Bu proje ve içindeki tüm görevler silinecek. Emin misin?")) return;
+
+    const veri = await cagir(`/projects/${id}`, { method: "DELETE" });
+    if (veri) fetchProjects();
   }
 
+  // ---------- GÖREV İŞLEMLERİ ----------
+
+  async function addTask() {
+    const baslik = newTitle.trim();
+    if (!baslik) return;
+
+    const veri = await cagir(`/projects/${selectedProject.id}/tasks`, {
+      method: "POST",
+      body: { title: baslik, status: "todo" },
+    });
+    if (veri) {
+      setNewTitle("");
+      fetchTasks();
+    }
+  }
+
+  async function moveTask(id, newStatus) {
+    // Görevi önce ekranda anında taşıyorum (kullanıcı beklemesin),
+    // sonra sunucudan gelen gerçek listeyle tazeliyorum.
+    setTasks((eski) => eski.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
+
+    const veri = await cagir(`/tasks/${id}`, { method: "PUT", body: { status: newStatus } });
+    // İstek başarısızsa ekranı gerçek duruma geri döndürüyorum
+    fetchTasks();
+    return veri;
+  }
+
+  async function deleteTask(id) {
+    const veri = await cagir(`/tasks/${id}`, { method: "DELETE" });
+    if (veri) fetchTasks();
+  }
 
   // ============================================================
   //  EKRAN 1: GİRİŞ YAPILMAMIŞSA -> Giriş / Kayıt ekranı
   // ============================================================
   if (!token) {
     return (
-      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
-        {/* Cam efektli (glassmorphism) giriş kartı */}
-        <div style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)", padding: 42, borderRadius: 20, width: 370, boxShadow: "0 24px 60px rgba(0,0,0,0.55)", animation: "slideIn 0.5s ease" }}>
-          <div style={{ textAlign: "center", marginBottom: 30 }}>
-            <div style={{ fontSize: 46, marginBottom: 8, filter: "drop-shadow(0 4px 12px rgba(123,63,228,0.5))" }}>🗂️</div>
-            <h2 style={{ color: "#fff", fontSize: 25, letterSpacing: 0.3 }}>Trello Clone</h2>
-            <p style={{ color: "#8a8fa3", fontSize: 13, marginTop: 6 }}>
-              {isRegister ? "Yeni hesap oluştur" : "Devam etmek için giriş yap"}
-            </p>
+      <div className="giris-ekran">
+        <div className="giris-kart">
+          <div className="giris-baslik">
+            <div className="logo">🗂️</div>
+            <h2>Trello Clone</h2>
+            <p>{isRegister ? "Yeni hesap oluştur" : "Devam etmek için giriş yap"}</p>
           </div>
-          {/* Kayıt modundaysa ad-soyad kutusunu da gösteriyorum */}
-          {isRegister && (
-            <input placeholder="Ad Soyad" value={name} onChange={(e) => setName(e.target.value)}
-              onFocus={() => setFocused("name")} onBlur={() => setFocused("")}
-              style={{ ...inputStyle, ...(focused === "name" ? inputFocus : {}) }} />
-          )}
-          <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
-            onFocus={() => setFocused("email")} onBlur={() => setFocused("")}
-            style={{ ...inputStyle, ...(focused === "email" ? inputFocus : {}) }} />
-          <input type="password" placeholder="Şifre" value={password} onChange={(e) => setPassword(e.target.value)}
-            onFocus={() => setFocused("pass")} onBlur={() => setFocused("")}
-            style={{ ...inputStyle, ...(focused === "pass" ? inputFocus : {}) }} />
-          {/* Hata veya bilgi mesajını burada gösteriyorum */}
-          {error && (
-            <div style={{ color: error.includes("başarılı") ? "#61bd4f" : "#ff6b6b", fontSize: 13, marginBottom: 14, textAlign: "center" }}>
-              {error}
-            </div>
-          )}
-          {/* Duruma göre giriş ya da kayıt fonksiyonunu çalıştıran buton */}
-          <button onClick={isRegister ? handleRegister : handleLogin}
-            style={{ width: "100%", padding: 14, background: "linear-gradient(135deg, #5067c5, #7b3fe4)", color: "white", border: "none", borderRadius: 12, fontWeight: "bold", fontSize: 15, cursor: "pointer", marginBottom: 16, boxShadow: "0 6px 20px rgba(123,63,228,0.45)" }}>
-            {isRegister ? "Kayıt Ol" : "Giriş Yap"}
-          </button>
-          {/* Giriş ve kayıt arasında geçiş yapan link */}
-          <div style={{ textAlign: "center", fontSize: 13, color: "#8a8fa3" }}>
+
+          {/* Enter tuşuyla da gönderilebilsin diye gerçek bir form kullanıyorum */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (isRegister) handleRegister();
+              else handleLogin();
+            }}
+          >
+            {/* Kayıt modundaysa ad-soyad kutusunu da gösteriyorum */}
+            {isRegister && (
+              <input
+                className="alan"
+                placeholder="Ad Soyad"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            )}
+            <input
+              className="alan"
+              type="email"
+              placeholder="Email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <input
+              className="alan"
+              type="password"
+              placeholder="Şifre"
+              autoComplete={isRegister ? "new-password" : "current-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            {yavas && <div className="uyari-serit">Sunucu uyanıyor, biraz sürebilir...</div>}
+
+            {error && (
+              <div className={`mesaj ${error.includes("başarılı") ? "basarili" : ""}`}>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-mor btn-blok" disabled={yukleniyor}>
+              {yukleniyor ? "Lütfen bekle..." : isRegister ? "Kayıt Ol" : "Giriş Yap"}
+            </button>
+          </form>
+
+          <div className="gecis-linki">
             {isRegister ? "Zaten hesabın var mı? " : "Hesabın yok mu? "}
-            <span onClick={() => { setIsRegister(!isRegister); setError(""); }}
-              style={{ color: "#7b9fff", cursor: "pointer", fontWeight: "bold" }}>
+            <span onClick={() => { setIsRegister(!isRegister); setError(""); }}>
               {isRegister ? "Giriş yap" : "Kayıt ol"}
             </span>
           </div>
         </div>
 
-        {/* Geliştirici Bilgisi (Ekrana Sabitlendi) */}
-        <div style={{ position: 'fixed', bottom: '24px', left: 0, width: '100%', textAlign: 'center', fontSize: '12px', color: '#64748b', zIndex: 50 }}>
+        <div className="gelistirici">
           <p>
             Developed by{" "}
-            <a 
-              href="https://ademucar.com.tr/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              style={{ color: '#cbd5e1', fontWeight: 500, textDecoration: 'none', transition: 'color 0.2s' }}
-              onMouseOver={(e) => e.target.style.color = '#a855f7'} 
-              onMouseOut={(e) => e.target.style.color = '#cbd5e1'}
-            >
+            <a href="https://ademucar.com.tr/" target="_blank" rel="noopener noreferrer">
               Adem Uçar
             </a>
           </p>
@@ -258,23 +279,21 @@ function App() {
     );
   }
 
-  // Üst bar: Her ekranda ortak olan başlık + kullanıcı adı + çıkış butonu.
-  // Ayrı bir bileşen (component) yaptım ki iki ekranda da tekrar tekrar yazmayayım.
-  const TopBar = () => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
-      <h1 style={{ color: "#fff", display: "flex", alignItems: "center", gap: 10, fontSize: 29, letterSpacing: 0.3 }}>
-        <span style={{ filter: "drop-shadow(0 3px 10px rgba(123,63,228,0.5))" }}>🗂️</span> Trello Clone
+  // Üst bar: iki ekranda da ortak olduğu için tek yerde tanımladım.
+  // (Eskiden bu, App'in İÇİNDE bileşen olarak tanımlıydı; her render'da
+  // yeni bir bileşen sayıldığı için React onu tamamen yeniden kuruyordu.
+  // Artık sadece bir JSX parçası döndüren fonksiyon, bu sorun yok.)
+  const ustBar = (
+    <div className="ust-bar">
+      <h1>
+        <span>🗂️</span> Trello Clone
       </h1>
-      <div style={{ color: "#e0e0e0", display: "flex", alignItems: "center", gap: 14 }}>
+      <div className="ust-bar-sag">
         <span>
-          Merhaba, <strong style={{ color: "#7b9fff" }}>{userName}</strong>
-          {/* Kullanıcı admin ise adının yanında bir ADMIN rozeti gösteriyorum */}
-          {userRole === "admin" && (
-            <span style={{ marginLeft: 8, background: "#7b3fe4", color: "#fff", fontSize: 11, padding: "2px 8px", borderRadius: 8, fontWeight: "bold" }}>ADMIN</span>
-          )}
+          Merhaba, <strong style={{ color: "var(--renk-acik-mavi)" }}>{oturum.name}</strong>
+          {oturum.role === "admin" && <span className="rozet-admin">ADMIN</span>}
         </span>
-        <button onClick={handleLogout}
-          style={{ padding: "9px 18px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.05)", color: "white", cursor: "pointer", fontWeight: "bold" }}>
+        <button className="btn btn-sade" onClick={handleLogout}>
           Çıkış
         </button>
       </div>
@@ -286,46 +305,47 @@ function App() {
   // ============================================================
   if (!selectedProject) {
     return (
-      <div style={{ position: "relative", zIndex: 1, padding: 28, maxWidth: 1150, margin: "0 auto" }}>
-        <TopBar />
+      <div className="sayfa">
+        {ustBar}
 
-        {/* Yeni proje oluşturma kutusu */}
-        <div style={{ marginBottom: 34, display: "flex", gap: 10 }}>
-          <input value={newProjectTitle} onChange={(e) => setNewProjectTitle(e.target.value)}
+        <div className="ekle-satiri">
+          <input
+            className="alan"
+            value={newProjectTitle}
+            onChange={(e) => setNewProjectTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addProject()}
-            onFocus={() => setFocused("proj")} onBlur={() => setFocused("")}
             placeholder="Yeni proje adı yaz ve Enter'a bas..."
-            style={{ padding: "14px 18px", width: 360, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, fontSize: 14, background: "rgba(255,255,255,0.05)", color: "#fff", outline: "none", transition: "all 0.25s ease", ...(focused === "proj" ? { border: "1px solid #7b9fff", boxShadow: "0 0 0 3px rgba(123,159,255,0.2)" } : {}) }} />
-          <button onClick={addProject}
-            style={{ padding: "14px 28px", border: "none", borderRadius: 12, background: "linear-gradient(135deg, #5067c5, #7b3fe4)", color: "white", fontWeight: "bold", cursor: "pointer", boxShadow: "0 6px 18px rgba(123,63,228,0.35)" }}>
+          />
+          <button className="btn btn-mor" onClick={addProject} disabled={yukleniyor}>
             + Proje
           </button>
         </div>
 
-        <h2 style={{ color: "#fff", fontSize: 18, marginBottom: 16 }}>Projelerim</h2>
+        {yavas && <div className="uyari-serit">Sunucu uyanıyor, biraz sürebilir...</div>}
+        {error && <div className="mesaj">{error}</div>}
 
-        {/* Hiç proje yoksa bilgi mesajı */}
-        {projects.length === 0 && (
-          <div style={{ color: "#6a6f85", fontSize: 14 }}>Henüz proje yok. Yukarıdan bir proje oluştur.</div>
+        <h2 className="bolum-baslik">Projelerim</h2>
+
+        {projects.length === 0 && !yukleniyor && (
+          <div className="bos-mesaj">Henüz proje yok. Yukarıdan bir proje oluştur.</div>
         )}
 
-        {/* Projeleri kart olarak listeliyorum */}
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div className="proje-listesi">
           {projects.map((project) => (
-            <div key={project.id}
+            <div
+              key={project.id}
+              className="proje-kart"
               onClick={() => setSelectedProject(project)}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.border = "1px solid rgba(123,159,255,0.4)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)"; }}
-              style={{ width: 260, background: "rgba(255,255,255,0.04)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20, cursor: "pointer", boxShadow: "0 10px 35px rgba(0,0,0,0.35)", transition: "all 0.2s ease" }}>
-              <div style={{ fontSize: 30, marginBottom: 10 }}>📁</div>
-              <div style={{ fontSize: 16, fontWeight: "bold", color: "#fff", marginBottom: 6 }}>{project.title}</div>
+            >
+              <div className="ikon">📁</div>
+              <div className="ad">{project.title}</div>
               {/* Admin isem projenin sahibini de gösteriyorum */}
-              {project.owner && (
-                <div style={{ fontSize: 12, color: "#7b9fff", marginBottom: 10 }}>👤 {project.owner}</div>
-              )}
-              {/* e.stopPropagation: Sil'e basınca kartın "aç" tıklaması tetiklenmesin diye */}
-              <button onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}
-                style={{ fontSize: 11, padding: "5px 10px", border: "none", borderRadius: 7, background: "rgba(235,90,70,0.2)", color: "#ff8a7a", cursor: "pointer" }}>
+              {project.owner && <div className="sahip">👤 {project.owner}</div>}
+              {/* stopPropagation: Sil'e basınca kartın "aç" tıklaması tetiklenmesin */}
+              <button
+                className="btn-sil"
+                onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}
+              >
                 Sil
               </button>
             </div>
@@ -339,70 +359,63 @@ function App() {
   //  EKRAN 3: PROJE SEÇİLDİ -> O projenin Kanban Panosu
   // ============================================================
   return (
-    <div style={{ position: "relative", zIndex: 1, padding: 28, maxWidth: 1150, margin: "0 auto" }}>
-      <TopBar />
+    <div className="sayfa">
+      {ustBar}
 
-      {/* Geri dön butonu ve seçili projenin adı */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-        <button onClick={() => setSelectedProject(null)}
-          style={{ padding: "8px 16px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, background: "rgba(255,255,255,0.05)", color: "white", cursor: "pointer", fontWeight: "bold" }}>
+      <div className="proje-ust">
+        <button className="btn btn-sade" onClick={() => setSelectedProject(null)}>
           ← Projeler
         </button>
-        <h2 style={{ color: "#fff", fontSize: 20 }}>📁 {selectedProject.title}</h2>
+        <h2>📁 {selectedProject.title}</h2>
       </div>
 
-      {/* Görev ekleme kutusu */}
-      <div style={{ marginBottom: 34, display: "flex", gap: 10 }}>
-        <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+      <div className="ekle-satiri">
+        <input
+          className="alan"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addTask()}
-          onFocus={() => setFocused("new")} onBlur={() => setFocused("")}
           placeholder="Yeni görev yaz ve Enter'a bas..."
-          style={{ padding: "14px 18px", width: 360, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, fontSize: 14, background: "rgba(255,255,255,0.05)", color: "#fff", outline: "none", transition: "all 0.25s ease", ...(focused === "new" ? { border: "1px solid #7b9fff", boxShadow: "0 0 0 3px rgba(123,159,255,0.2)" } : {}) }} />
-        <button onClick={addTask}
-          style={{ padding: "14px 28px", border: "none", borderRadius: 12, background: "linear-gradient(135deg, #61bd4f, #4a9e3a)", color: "white", fontWeight: "bold", cursor: "pointer", boxShadow: "0 6px 18px rgba(97,189,79,0.35)" }}>
+        />
+        <button className="btn btn-yesil" onClick={addTask} disabled={yukleniyor}>
           + Ekle
         </button>
       </div>
 
-      {/* Kanban kolonları: 3 durum için 3 kolon çiziyorum */}
-      <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
+      {yavas && <div className="uyari-serit">Sunucu uyanıyor, biraz sürebilir...</div>}
+      {error && <div className="mesaj">{error}</div>}
+
+      {/* Kanban kolonları: 3 durum için 3 kolon */}
+      <div className="pano">
         {COLUMNS.map((col) => {
-          // Bu kolona ait görevleri filtreliyorum (sadece o durumdakiler)
           const colTasks = tasks.filter((t) => t.status === col.key);
           return (
-            <div key={col.key}
-              style={{ flex: 1, background: "rgba(255,255,255,0.04)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 16, boxShadow: "0 10px 35px rgba(0,0,0,0.35)" }}>
-              {/* Kolon başlığı + görev sayısı rozeti */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 12, borderBottom: `2px solid ${col.color}` }}>
-                <strong style={{ fontSize: 15, color: "#fff", display: "flex", alignItems: "center", gap: 8, textShadow: `0 0 20px ${col.color}55` }}>
+            // Kolonun rengini CSS değişkeni olarak geçiyorum; stil işini CSS yapıyor
+            <div key={col.key} className="kolon" style={{ "--kolon-renk": col.color }}>
+              <div className="kolon-baslik">
+                <strong>
                   <span>{col.icon}</span> {col.title}
                 </strong>
-                <span style={{ background: col.color, color: "#000", borderRadius: 12, padding: "2px 11px", fontSize: 12, fontWeight: "bold", boxShadow: `0 2px 10px ${col.color}66` }}>
-                  {colTasks.length}
-                </span>
+                <span className="kolon-sayac">{colTasks.length}</span>
               </div>
-              {/* Kolon boşsa mesaj göster */}
-              {colTasks.length === 0 && (
-                <div style={{ color: "#6a6f85", fontSize: 13, textAlign: "center", padding: 28 }}>Henüz görev yok</div>
-              )}
-              {/* Bu kolondaki görev kartları */}
+
+              {colTasks.length === 0 && <div className="bos-mesaj">Henüz görev yok</div>}
+
               {colTasks.map((task) => (
-                <div key={task.id}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.4)"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.2)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.08)"; }}
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: 14, marginBottom: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.2)", animation: "slideIn 0.3s ease", transition: "all 0.2s ease" }}>
-                  <div style={{ fontSize: 14, marginBottom: 12, color: "#e8e8e8" }}>{task.title}</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <div key={task.id} className="gorev-kart">
+                  <div className="metin">{task.title}</div>
+                  <div className="gorev-butonlar">
                     {/* Görevi diğer kolonlara taşıyan butonlar */}
                     {COLUMNS.filter((c) => c.key !== col.key).map((c) => (
-                      <button key={c.key} onClick={() => moveTask(task.id, c.key)}
-                        style={{ fontSize: 11, padding: "5px 10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 7, background: "rgba(255,255,255,0.05)", color: "#ccc", cursor: "pointer" }}>
+                      <button
+                        key={c.key}
+                        className="btn-mini"
+                        onClick={() => moveTask(task.id, c.key)}
+                      >
                         {c.title}
                       </button>
                     ))}
-                    {/* Görevi silen buton */}
-                    <button onClick={() => deleteTask(task.id)}
-                      style={{ fontSize: 11, padding: "5px 10px", border: "none", borderRadius: 7, background: "rgba(235,90,70,0.2)", color: "#ff8a7a", cursor: "pointer" }}>
+                    <button className="btn-sil" onClick={() => deleteTask(task.id)}>
                       Sil
                     </button>
                   </div>
@@ -415,13 +428,5 @@ function App() {
     </div>
   );
 }
-
-// Giriş/kayıt formundaki input kutularının ortak stilini tek yerde tanımladım
-const inputStyle = {
-  width: "100%", padding: 13, marginBottom: 14, border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: 10, fontSize: 14, background: "rgba(255,255,255,0.05)", color: "#fff", outline: "none", transition: "all 0.25s ease",
-};
-// Bir kutuya tıklandığında (focus) uygulanan mavi parlama efekti
-const inputFocus = { border: "1px solid #7b9fff", boxShadow: "0 0 0 3px rgba(123,159,255,0.2)" };
 
 export default App;

@@ -1,176 +1,154 @@
-// .env dosyasındaki gizli bilgileri (veritabanı adresi) okuyorum. EN ÜSTTE olmalı.
-require("dotenv").config();
-
 // ============================================================
 //  TRELLO CLONE - BACKEND (Sunucu Tarafı)
 //  Node.js + Express + Sequelize (ORM) ile yazdım.
 //  Yapı: User (Kullanıcı) -> Project (Proje) -> Task (Görev)
-//  Veritabanı olarak PostgreSQL kullanıyorum (Render'da, bulutta).
+//  Veritabanı bağlantısı ve tablolar db.js dosyasında.
 // ============================================================
+require("dotenv").config();
 
-// --- Kullandığım hazır kütüphaneleri (paketleri) çağırıyorum ---
-const express = require("express");            // Sunucuyu ve API adreslerini kurmak için
-const cors = require("cors");                  // Frontend'in (farklı port) backend'e bağlanmasına izin vermek için
-const bcrypt = require("bcryptjs");            // Şifreleri güvenli şekilde şifrelemek (hash) için
-const jwt = require("jsonwebtoken");           // Giriş yapınca kimlik kartı (token) üretmek için
-const rateLimit = require("express-rate-limit"); // Çok fazla istek atan kişileri sınırlamak için
-const { Sequelize, DataTypes } = require("sequelize"); // ORM: SQL yazmadan veritabanı yönetmek için
+const express = require("express");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 
-// Express uygulamamı başlatıyorum
+// Veritabanı katmanımı (modeller + bağlantı) tek yerden alıyorum
+const { User, Project, Task, connectDatabase, dialect } = require("./db");
+
 const app = express();
 
-// cors: frontend (localhost:5173) ile backend (localhost:3000) farklı adreslerde
-// olduğu için, tarayıcı normalde bağlantıyı engeller. cors bu izni veriyor.
-app.use(cors());
+// ============================================================
+//  TEMEL AYARLAR
+// ============================================================
 
-// express.json: gelen isteklerin içindeki JSON verisini okuyabilmem için gerekli
-app.use(express.json());
+// trust proxy: Render/Vercel gibi platformlar isteği bir ara sunucu (proxy)
+// üzerinden iletir. Bu ayar olmadan express-rate-limit gerçek IP'yi okuyamaz
+// ve hata fırlatır. "1" = önümde 1 tane güvenilir proxy var demek.
+app.set("trust proxy", 1);
+
+app.use(cors());          // Frontend farklı adreste olduğu için izin veriyorum
+app.use(express.json());  // Gelen JSON verisini okuyabilmek için
+
+// JWT token'larını imzalamak için gizli anahtar.
+// Öncelik .env dosyasındaki JWT_SECRET'ta; yoksa yerel geliştirme için
+// varsayılan bir değer kullanıyorum (ve uyarı veriyorum).
+const SECRET = process.env.JWT_SECRET || "yerel_gelistirme_anahtari_degistir";
+if (!process.env.JWT_SECRET) {
+  console.warn("[uyari] JWT_SECRET tanimli degil, varsayilan anahtar kullaniliyor.");
+}
 
 // ---- GÜVENLİK: RATE LIMIT (İstek Sınırlama) ----
-// Amacım: Bir kişinin sisteme aşırı istek atıp onu yormasını (spam/saldırı) engellemek.
-// windowMs = zaman penceresi (15 dakika), max = bu sürede izin verilen istek sayısı.
+// Amacım: Aşırı istek atıp sunucuyu yormayı (spam/saldırı) engellemek.
+// Genel sınırı 600 yaptım: Arayüz her işlemden sonra listeyi yenilediği için
+// normal kullanımda bile çok istek gidiyor; eski 100 limiti gerçek
+// kullanıcıları da engelliyordu.
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 dakika
-  max: 100,                 // 15 dakikada en fazla 100 istek
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { message: "Çok fazla istek attınız, lütfen biraz bekleyin." },
+  // Sağlık kontrolü isteklerini saymıyorum (Render sürekli ping atıyor)
+  skip: (req) => req.path === "/" || req.path === "/health",
 });
-app.use(limiter); // Bu sınırı tüm sisteme uyguladım
+app.use(limiter);
 
-// Giriş ve kayıt için ayrı, DAHA SIKI bir sınır koydum.
-// Sebebi: Birisi şifre kırmaya çalışırsa (deneme yanılma / brute-force),
-// 15 dakikada sadece 10 deneme yapabilsin, fazlası engellensin.
+// Giriş/kayıt için ayrı ve daha sıkı sınır (şifre deneme-yanılma saldırısına karşı).
+// skipSuccessfulRequests: Başarılı girişleri saymıyorum, sadece BAŞARISIZ
+// denemeleri sayıyorum. Böylece doğru şifreyle giren kullanıcı asla kilitlenmiyor.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { message: "Çok fazla giriş denemesi, lütfen 15 dakika bekleyin." },
-});
-
-// JWT token'larını imzalamak için kullandığım gizli anahtar.
-// (Not: Gerçek/büyük projelerde bu anahtar .env dosyasında saklanır,
-//  koda açık yazılmaz. Bu öğrenci projesinde sadelik için burada tuttum.)
-const SECRET = "benim_gizli_anahtarim_123";
-
-// ============================================================
-//  SEQUELIZE (ORM) KURULUMU
-//  ORM sayesinde "SELECT * FROM..." gibi SQL cümleleri yazmıyorum;
-//  onun yerine JavaScript koduyla (User.findAll gibi) veritabanını yönetiyorum.
-//  Bu hem daha okunaklı hem de SQL injection saldırılarına karşı güvenli.
-//
-//  Veritabanı adresini güvenlik için koda yazmıyorum; .env dosyasından
-//  (DATABASE_URL) okuyorum. Böylece gizli bilgi GitHub'a sızmaz.
-// ============================================================
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: "postgres",     // Veritabanı türüm PostgreSQL
-  logging: false,          // Konsolda SQL loglarını kapattım (ekran temiz kalsın)
-  dialectOptions: {
-    // Render'ın PostgreSQL'i güvenli (SSL) bağlantı ister. Bu ayar onu sağlıyor.
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: { message: "Çok fazla başarısız giriş denemesi, lütfen 15 dakika bekleyin." },
 });
 
 // ============================================================
-//  MODELLER (Veritabanı Tabloları)
-//  Her model bir tabloya karşılık gelir. Alanları (kolonları) burada tanımladım.
+//  YARDIMCI FONKSİYONLAR
 // ============================================================
 
-// USER tablosu: Kullanıcı bilgilerini tutuyor
-const User = sequelize.define("User", {
-  name: { type: DataTypes.STRING, allowNull: false },              // Ad soyad (boş olamaz)
-  email: { type: DataTypes.STRING, allowNull: false, unique: true }, // Email (benzersiz olmalı, aynı email 2 kez kayıt olamaz)
-  password: { type: DataTypes.STRING, allowNull: false },          // Şifre (hash'lenmiş halde saklanır)
-  role: { type: DataTypes.STRING, defaultValue: "user" },          // Yetki: varsayılan "user", yönetici ise "admin"
-});
-
-// PROJECT tablosu: Projeleri (Trello'daki board mantığı) tutuyor
-const Project = sequelize.define("Project", {
-  title: { type: DataTypes.STRING, allowNull: false }, // Proje adı
-});
-
-// TASK tablosu: Görevleri tutuyor
-const Task = sequelize.define("Task", {
-  title: { type: DataTypes.STRING, allowNull: false },      // Görev başlığı
-  status: { type: DataTypes.STRING, defaultValue: "todo" }, // Durum: todo / doing / done (varsayılan todo)
-});
-
-// ============================================================
-//  İLİŞKİLER (ER Diagram'daki bağlantılar)
-//  Tabloların birbirine nasıl bağlandığını burada tanımladım.
-// ============================================================
-
-// Bir kullanıcının BİRDEN ÇOK projesi olabilir (1 User - Çok Project)
-User.hasMany(Project, { foreignKey: "owner_id" });
-Project.belongsTo(User, { foreignKey: "owner_id" }); // Her proje bir kullanıcıya (sahibine) bağlı
-
-// Bir projenin BİRDEN ÇOK görevi olabilir (1 Project - Çok Task)
-Project.hasMany(Task, { foreignKey: "project_id" });
-Task.belongsTo(Project, { foreignKey: "project_id" }); // Her görev bir projeye bağlı
-
-// Her görev, onu oluşturan kullanıcıya da bağlı (kim ekledi bilgisi için)
-User.hasMany(Task, { foreignKey: "user_id" });
-Task.belongsTo(User, { foreignKey: "user_id" });
-
-// Tanımladığım modellere göre tabloları veritabanında otomatik oluşturuyorum (yoksa)
-sequelize.sync();
-
-// ============================================================
-//  YARDIMCI FONKSİYON: TOKEN KONTROLÜ (auth middleware)
-//  Bu fonksiyonu, korumalı işlemlerden ÖNCE çalıştırıyorum.
-//  Görevi: İsteği atan kişi gerçekten giriş yapmış mı diye kontrol etmek.
-// ============================================================
+// TOKEN KONTROLÜ (auth middleware): Korumalı işlemlerden ÖNCE çalışır.
+// Görevi: İsteği atan kişi gerçekten giriş yapmış mı diye kontrol etmek.
 function auth(req, res, next) {
-  // İsteğin başlığında (header) token var mı diye bakıyorum
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ message: "Token yok, giriş yapın" });
 
   // Token "Bearer XXXXX" formatında gelir, ben sadece XXXXX kısmını ayırıyorum
   const token = authHeader.split(" ")[1];
   try {
-    // Token'ı gizli anahtarımla doğruluyorum. Geçerliyse içindeki kullanıcı bilgisini alıyorum.
-    req.user = jwt.verify(token, SECRET); // req.user içinde artık id, name, role var
-    next(); // Her şey yolundaysa, asıl işleme devam et
-  } catch (err) {
-    // Token sahte veya süresi dolmuşsa erişimi reddediyorum
-    res.status(401).json({ message: "Geçersiz token" });
+    req.user = jwt.verify(token, SECRET); // içinde id, name, role var
+    next();
+  } catch {
+    res.status(401).json({ message: "Geçersiz veya süresi dolmuş token" });
   }
 }
 
+// Bir projeye erişim yetkim var mı? Bu kontrolü 3 ayrı yerde kullandığım için
+// tek fonksiyona topladım (kod tekrarını önlemek ve kuralı tek yerde tutmak için).
+// Yetki varsa projeyi, yoksa null döndürüp uygun hatayı kendisi yazar.
+async function getProjectOrFail(req, res) {
+  const project = await Project.findByPk(req.params.projectId || req.params.id);
+  if (!project) {
+    res.status(404).json({ message: "Proje bulunamadı" });
+    return null;
+  }
+  // Kural: Proje bana ait değilse VE admin değilsem erişemem
+  if (project.owner_id !== req.user.id && req.user.role !== "admin") {
+    res.status(403).json({ message: "Bu projeye erişiminiz yok" });
+    return null;
+  }
+  return project;
+}
+
+// Email'i her zaman aynı biçimde saklıyorum: boşlukları at, küçük harfe çevir.
+// Böylece "  Ali@X.com " ile kayıt olup "ali@x.com" ile giriş yapmak çalışıyor.
+const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+
+// ============================================================
+//  SAĞLIK KONTROLÜ
+//  Render gibi platformlar sunucunun ayakta olup olmadığını buradan anlar.
+//  Ayrıca tarayıcıda adrese girince "Cannot GET /" yerine düzgün cevap görünür.
+// ============================================================
+app.get(["/", "/health"], (req, res) => {
+  res.json({
+    status: "ok",
+    service: "trello-clone-backend",
+    database: dialect,
+    dbConnected: app.locals.dbConnected === true,
+  });
+});
+
 // ============================================================
 //  KAYIT OLMA (REGISTER)
-//  authLimiter: Bu adrese de sıkı istek sınırı uyguladım.
 // ============================================================
 app.post("/auth/register", authLimiter, async (req, res) => {
-  const { name, email, password } = req.body;
+  const name = String(req.body.name || "").trim();
+  const email = normalizeEmail(req.body.email);
+  const { password } = req.body;
 
-  // 1) Boş alan kontrolü: hepsi dolu mu?
+  // 1) Boş alan kontrolü
   if (!name || !email || !password) {
     return res.status(400).json({ message: "Tüm alanları doldurun" });
   }
-
-  // 2) Email format kontrolü: içinde "@" ve "." var mı, geçerli bir email mi?
-  const emailGecerli = /^\S+@\S+\.\S+$/.test(email);
-  if (!emailGecerli) {
+  // 2) Email format kontrolü
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
     return res.status(400).json({ message: "Geçerli bir email adresi girin" });
   }
-
-  // 3) Şifre uzunluğu kontrolü: en az 4 karakter olsun
-  if (password.length < 4) {
+  // 3) Şifre uzunluğu kontrolü
+  if (String(password).length < 4) {
     return res.status(400).json({ message: "Şifre en az 4 karakter olmalı" });
   }
-
-  // 4) Bu email daha önce kayıt olmuş mu diye kontrol ediyorum
-  const existing = await User.findOne({ where: { email } });
-  if (existing) {
+  // 4) Bu email daha önce kayıt olmuş mu?
+  if (await User.findOne({ where: { email } })) {
     return res.status(400).json({ message: "Bu email zaten kayıtlı" });
   }
 
-  // 5) Şifreyi düz metin OLARAK DEĞİL, bcrypt ile hash'leyerek (şifreleyerek) kaydediyorum.
-  const hashedPassword = bcrypt.hashSync(password, 10);
-
-  // 6) Yeni kullanıcıyı ORM ile oluşturuyorum
+  // 5) Şifreyi düz metin olarak DEĞİL, bcrypt ile hash'leyerek kaydediyorum
+  const hashedPassword = bcrypt.hashSync(String(password), 10);
   const user = await User.create({ name, email, password: hashedPassword });
+
   res.status(201).json({ message: "Kayıt başarılı", userId: user.id });
 });
 
@@ -178,22 +156,24 @@ app.post("/auth/register", authLimiter, async (req, res) => {
 //  GİRİŞ YAPMA (LOGIN)
 // ============================================================
 app.post("/auth/login", authLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  const email = normalizeEmail(req.body.email);
+  const password = String(req.body.password || "");
 
-  // Girilen email'e sahip kullanıcıyı buluyorum
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email ve şifre gerekli" });
+  }
+
   const user = await User.findOne({ where: { email } });
-  // Kullanıcı yoksa, güvenlik için "email mi şifre mi yanlış" demiyorum, ikisini de gizliyorum
-  if (!user) return res.status(400).json({ message: "Email veya şifre hatalı" });
+  // Güvenlik için "email mi şifre mi yanlış" demiyorum, ikisini de gizliyorum
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    return res.status(401).json({ message: "Email veya şifre hatalı" });
+  }
 
-  // Girilen şifreyi, veritabanındaki hash'li şifreyle karşılaştırıyorum
-  const valid = bcrypt.compareSync(password, user.password);
-  if (!valid) return res.status(400).json({ message: "Email veya şifre hatalı" });
-
-  // Şifre doğruysa, kullanıcıya 7 gün geçerli bir JWT token (kimlik kartı) üretiyorum.
+  // Şifre doğruysa 7 gün geçerli bir JWT token (kimlik kartı) üretiyorum
   const token = jwt.sign(
     { id: user.id, name: user.name, role: user.role },
     SECRET,
-    { expiresIn: "7d" } // 7 gün sonra token geçersiz olur, tekrar giriş gerekir
+    { expiresIn: "7d" }
   );
 
   res.json({ token, name: user.name, role: user.role });
@@ -203,46 +183,43 @@ app.post("/auth/login", authLimiter, async (req, res) => {
 //  PROJE İŞLEMLERİ
 // ============================================================
 
-// Projeleri listele. Admin TÜM projeleri, normal kullanıcı SADECE kendi projelerini görür.
+// Projeleri listele. Admin TÜM projeleri, normal kullanıcı SADECE kendininkileri görür.
 app.get("/projects", auth, async (req, res) => {
-  let projects;
-  if (req.user.role === "admin") {
-    // Admin ise: tüm projeleri, her projenin sahibinin adıyla birlikte getiriyorum
-    projects = await Project.findAll({
-      include: { model: User, attributes: ["name"] },
-    });
-    projects = projects.map((p) => ({
+  const isAdmin = req.user.role === "admin";
+
+  const projects = await Project.findAll({
+    // Admin değilse sorguyu sadece kendi projeleriyle sınırlıyorum
+    where: isAdmin ? undefined : { owner_id: req.user.id },
+    // Admin ise projenin sahibinin adını da getiriyorum
+    include: isAdmin ? { model: User, attributes: ["name"] } : undefined,
+    order: [["id", "ASC"]], // Sıralama sabit olsun, liste her yenilemede zıplamasın
+  });
+
+  res.json(
+    projects.map((p) => ({
       id: p.id,
       title: p.title,
       owner_id: p.owner_id,
       owner: p.User ? p.User.name : null,
-    }));
-  } else {
-    // Normal kullanıcı ise: sadece kendi oluşturduğu projeleri getiriyorum
-    projects = await Project.findAll({ where: { owner_id: req.user.id } });
-  }
-  res.json(projects);
+    }))
+  );
 });
 
-// Yeni proje oluştur (giriş yapan kullanıcıya ait olarak)
+// Yeni proje oluştur
 app.post("/projects", auth, async (req, res) => {
-  const { title } = req.body;
+  const title = String(req.body.title || "").trim();
   if (!title) return res.status(400).json({ message: "Proje adı gerekli" });
+
   const project = await Project.create({ title, owner_id: req.user.id });
   res.status(201).json(project);
 });
 
 // Projeyi sil. Kural: Sadece projenin SAHİBİ veya ADMIN silebilir.
 app.delete("/projects/:id", auth, async (req, res) => {
-  const project = await Project.findByPk(req.params.id);
-  if (!project) return res.status(404).json({ message: "Proje bulunamadı" });
+  const project = await getProjectOrFail(req, res);
+  if (!project) return; // Hata cevabını yardımcı fonksiyon zaten gönderdi
 
-  // Yetki kontrolü: Bu proje bana ait değilse VE ben admin de değilsem, izin verme
-  if (project.owner_id !== req.user.id && req.user.role !== "admin") {
-    return res.status(403).json({ message: "Bu proje size ait değil" });
-  }
-
-  // Önce projeye ait tüm görevleri sil, sonra projeyi sil (yetim görev kalmasın)
+  // Önce projeye ait görevleri, sonra projeyi siliyorum (yetim görev kalmasın)
   await Task.destroy({ where: { project_id: project.id } });
   await project.destroy();
   res.json({ message: "Proje silindi" });
@@ -254,39 +231,34 @@ app.delete("/projects/:id", auth, async (req, res) => {
 
 // Bir projenin görevlerini listele
 app.get("/projects/:projectId/tasks", auth, async (req, res) => {
-  const project = await Project.findByPk(req.params.projectId);
-  if (!project) return res.status(404).json({ message: "Proje bulunamadı" });
+  const project = await getProjectOrFail(req, res);
+  if (!project) return;
 
-  // Yetki kontrolü: proje bana ait değilse ve admin değilsem erişimi engelle
-  if (project.owner_id !== req.user.id && req.user.role !== "admin") {
-    return res.status(403).json({ message: "Bu projeye erişiminiz yok" });
-  }
-
-  const tasks = await Task.findAll({ where: { project_id: req.params.projectId } });
+  const tasks = await Task.findAll({
+    where: { project_id: project.id },
+    order: [["id", "ASC"]],
+  });
   res.json(tasks);
 });
 
 // Bir projeye yeni görev ekle
 app.post("/projects/:projectId/tasks", auth, async (req, res) => {
-  const project = await Project.findByPk(req.params.projectId);
-  if (!project) return res.status(404).json({ message: "Proje bulunamadı" });
+  const project = await getProjectOrFail(req, res);
+  if (!project) return;
 
-  if (project.owner_id !== req.user.id && req.user.role !== "admin") {
-    return res.status(403).json({ message: "Bu projeye erişiminiz yok" });
-  }
+  const title = String(req.body.title || "").trim();
+  if (!title) return res.status(400).json({ message: "Görev adı gerekli" });
 
-  const { title, status } = req.body;
   const task = await Task.create({
     title,
-    status: status || "todo", // Durum belirtilmezse varsayılan "todo"
-    project_id: req.params.projectId,
+    status: req.body.status || "todo", // Durum belirtilmezse varsayılan "todo"
+    project_id: project.id,
     user_id: req.user.id,
   });
   res.status(201).json(task);
 });
 
-// Görevi güncelle (örneğin durumunu todo'dan doing'e taşımak).
-// Kural: Görevin sahibi veya admin yapabilir.
+// Görevi güncelle (örn. durumunu todo'dan doing'e taşımak)
 app.put("/tasks/:id", auth, async (req, res) => {
   const task = await Task.findByPk(req.params.id);
   if (!task) return res.status(404).json({ message: "Görev bulunamadı" });
@@ -296,9 +268,13 @@ app.put("/tasks/:id", auth, async (req, res) => {
   }
 
   // Yeni değer gelmişse onu kullan, gelmemişse eskisini koru
-  task.title = req.body.title || task.title;
-  task.status = req.body.status || task.status;
-  await task.save(); // Değişikliği veritabanına kaydet
+  if (req.body.title !== undefined) {
+    const title = String(req.body.title).trim();
+    if (title) task.title = title;
+  }
+  if (req.body.status !== undefined) task.status = req.body.status;
+
+  await task.save();
   res.json(task);
 });
 
@@ -316,12 +292,62 @@ app.delete("/tasks/:id", auth, async (req, res) => {
 });
 
 // ============================================================
+//  HATA YAKALAMA
+//  Bunlar EN SONDA olmalı; kendilerinden önceki hiçbir adrese
+//  uymayan istekler buraya düşer.
+// ============================================================
+
+// Olmayan bir adrese istek atılırsa
+app.use((req, res) => {
+  res.status(404).json({ message: "Böyle bir adres yok" });
+});
+
+// Herhangi bir yerde beklenmedik bir hata olursa (örn. veritabanı kopması).
+// Bu olmadan hata cevabı HTML olarak dönüyor ve arayüz onu okuyamıyordu.
+app.use((err, req, res, _next) => {
+  console.error("[hata]", err.message);
+
+  // Aynı email ile 2. kez kayıt gibi veritabanı kural ihlalleri
+  if (err.name === "SequelizeUniqueConstraintError") {
+    return res.status(400).json({ message: "Bu kayıt zaten mevcut" });
+  }
+  // Geçersiz veri gönderilmişse (örn. status alanına "todo/doing/done" dışında bir değer).
+  // Bu bir sunucu hatası değil, kullanıcı hatasıdır; o yüzden 400 dönüyorum.
+  if (err.name === "SequelizeValidationError") {
+    return res.status(400).json({ message: "Gönderilen veri geçersiz" });
+  }
+  // Veritabanına ulaşılamıyorsa kullanıcıya anlaşılır mesaj veriyorum
+  if (err.name && err.name.startsWith("SequelizeConnection")) {
+    return res.status(503).json({ message: "Veritabanına şu an ulaşılamıyor, tekrar deneyin" });
+  }
+
+  res.status(500).json({ message: "Sunucuda beklenmedik bir hata oluştu" });
+});
+
+// ============================================================
 //  SUNUCUYU BAŞLAT
-//  process.env.PORT: Deploy edildiğinde (Render'da) sunucu portunu Render belirler.
-//  O yüzden önce Render'ın verdiği portu, o yoksa 3000'i kullanıyorum.
-//  "0.0.0.0": Telefonun (mobil) da yerel ağdan bağlanabilmesi için.
+//  ÖNEMLİ: Önce veritabanına bağlanmayı deniyorum, ama bağlantı
+//  BAŞARISIZ OLSA BİLE sunucuyu yine de açıyorum.
+//  Sebebi: Eski kodda veritabanı hatası tüm sunucuyu çökertiyordu
+//  (Render'da 502 hatasının ve "giriş yapılamıyor" sorununun kaynağı buydu).
 // ============================================================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("Sunucu çalışıyor. Port: " + PORT);
-});
+
+async function start() {
+  const result = await connectDatabase();
+  app.locals.dbConnected = result.ok;
+
+  // "0.0.0.0": Telefonun (mobil) da yerel ağdan bağlanabilmesi için
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[sunucu] Calisiyor -> http://localhost:${PORT}  (veritabani: ${dialect})`);
+    if (!result.ok) {
+      console.log("[sunucu] UYARI: Veritabani baglantisi yok, istekler 503 donecek.");
+    }
+  });
+}
+
+// Beklenmedik bir hata sürecin sessizce ölmesine yol açmasın; en azından loglansın
+process.on("unhandledRejection", (err) => console.error("[unhandledRejection]", err?.message || err));
+process.on("uncaughtException", (err) => console.error("[uncaughtException]", err?.message || err));
+
+start();

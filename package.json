@@ -22,10 +22,6 @@
       "target": "portable"
     }
   },
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "jsonwebtoken": "^9.0.3"
-  },
   "devDependencies": {
     "electron": "^43.0.0",
     "electron-builder": "^26.15.3"

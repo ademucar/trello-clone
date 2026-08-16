@@ -1,184 +1,425 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+/* ============================================================
+   TRELLO CLONE - UYGULAMA STİLLERİ
+   Eskiden tüm stiller App.jsx içinde satır içi (inline) yazılıydı ve
+   bu yüzden JSX okunmuyordu. Hepsini buraya, sınıf (class) hâline taşıdım.
+   Böylece hem kod sadeleşti hem de :hover / medya sorgusu gibi
+   satır içi stille yapılamayan şeyleri CSS'in kendisiyle yapabiliyorum.
+   ============================================================ */
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+/* Tekrar eden renkleri ve ölçüleri değişken yaptım; tek yerden değiştirebiliyorum */
+:root {
+  --renk-mor: #7b3fe4;
+  --renk-mavi: #5067c5;
+  --renk-acik-mavi: #7b9fff;
+  --renk-yesil: #61bd4f;
+  --renk-kirmizi: #eb5a46;
+  --metin: #e8e8e8;
+  --metin-soluk: #8a8fa3;
+  --metin-cok-soluk: #6a6f85;
+  --cam: rgba(255, 255, 255, 0.04);
+  --cam-kenar: rgba(255, 255, 255, 0.08);
+  --golge: 0 10px 35px rgba(0, 0, 0, 0.35);
 }
 
-.hero {
+/* Tüm ekranların ortak dış kabı */
+.sayfa {
   position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+  z-index: 1;
+  padding: 28px;
+  max-width: 1150px;
+  margin: 0 auto;
 }
 
-#center {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
+/* ---------- GİRİŞ / KAYIT EKRANI ---------- */
 
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
-}
-
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
-}
-
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
-}
-
-.ticks {
+.giris-ekran {
   position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Cam efektli (glassmorphism) giriş kartı */
+.giris-kart {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 42px;
+  border-radius: 20px;
   width: 100%;
+  max-width: 370px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  animation: slideIn 0.5s ease;
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
+.giris-baslik {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.giris-baslik .logo {
+  font-size: 46px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 4px 12px rgba(123, 63, 228, 0.5));
+}
+.giris-baslik h2 {
+  color: #fff;
+  font-size: 25px;
+  letter-spacing: 0.3px;
+}
+.giris-baslik p {
+  color: var(--metin-soluk);
+  font-size: 13px;
+  margin-top: 6px;
+}
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+/* ---------- FORM ELEMANLARI ---------- */
+
+.alan {
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+/* Odaklanma efektini artık CSS yapıyor; eskiden bunun için
+   React state'i (focused) tutuluyordu, o state'i tamamen kaldırdım. */
+.alan:focus {
+  border-color: var(--renk-acik-mavi);
+  box-shadow: 0 0 0 3px rgba(123, 159, 255, 0.2);
+}
+
+/* Butonların ortak temeli */
+.btn {
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 14px 28px;
+  font-size: 14px;
+  transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+/* Bir istek sürerken buton pasifleşiyor: kullanıcı üst üste tıklayamasın */
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.btn-mor {
+  background: linear-gradient(135deg, var(--renk-mavi), var(--renk-mor));
+  box-shadow: 0 6px 18px rgba(123, 63, 228, 0.35);
+}
+.btn-yesil {
+  background: linear-gradient(135deg, var(--renk-yesil), #4a9e3a);
+  box-shadow: 0 6px 18px rgba(97, 189, 79, 0.35);
+}
+.btn-sade {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 9px 18px;
+  border-radius: 10px;
+}
+.btn-blok {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+/* Küçük "Sil" / "taşı" butonları */
+.btn-mini {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ccc;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-sil {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: none;
+  background: rgba(235, 90, 70, 0.2);
+  color: #ff8a7a;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Mesaj kutusu: hata kırmızı, başarı yeşil */
+.mesaj {
+  font-size: 13px;
+  margin-bottom: 14px;
+  text-align: center;
+  color: #ff6b6b;
+}
+.mesaj.basarili {
+  color: var(--renk-yesil);
+}
+
+.gecis-linki {
+  text-align: center;
+  font-size: 13px;
+  color: var(--metin-soluk);
+}
+.gecis-linki span {
+  color: var(--renk-acik-mavi);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* ---------- ÜST BAR ---------- */
+
+.ust-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ust-bar h1 {
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 29px;
+  letter-spacing: 0.3px;
+}
+.ust-bar-sag {
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.rozet-admin {
+  margin-left: 8px;
+  background: var(--renk-mor);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+/* ---------- EKLEME SATIRI (proje / görev) ---------- */
+
+.ekle-satiri {
+  margin-bottom: 34px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ekle-satiri .alan {
+  width: 360px;
+  max-width: 100%;
+  margin-bottom: 0;
+  padding: 14px 18px;
+  border-radius: 12px;
+}
+
+/* ---------- PROJE KARTLARI ---------- */
+
+.proje-listesi {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.proje-kart {
+  width: 260px;
+  background: var(--cam);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--cam-kenar);
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  box-shadow: var(--golge);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+/* Hover efektini CSS'e taşıdım; eskiden her kartta iki adet
+   JavaScript olayı (onMouseEnter/onMouseLeave) ile yapılıyordu. */
+.proje-kart:hover {
+  transform: translateY(-4px);
+  border-color: rgba(123, 159, 255, 0.4);
+}
+.proje-kart .ikon {
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+.proje-kart .ad {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.proje-kart .sahip {
+  font-size: 12px;
+  color: var(--renk-acik-mavi);
+  margin-bottom: 10px;
+}
+
+/* ---------- KANBAN PANOSU ---------- */
+
+.pano {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.kolon {
+  flex: 1;
+  min-width: 0;
+  background: var(--cam);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--cam-kenar);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--golge);
+}
+.kolon-baslik {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  /* Kolonun rengi JSX'ten CSS değişkeni olarak geliyor */
+  border-bottom: 2px solid var(--kolon-renk);
+}
+.kolon-baslik strong {
+  font-size: 15px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kolon-sayac {
+  background: var(--kolon-renk);
+  color: #000;
+  border-radius: 12px;
+  padding: 2px 11px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.gorev-kart {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--cam-kenar);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.gorev-kart:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.gorev-kart .metin {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--metin);
+  overflow-wrap: anywhere; /* Çok uzun görev adı kartı taşırmasın */
+}
+.gorev-butonlar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ---------- ORTAK KÜÇÜK PARÇALAR ---------- */
+
+.bos-mesaj {
+  color: var(--metin-cok-soluk);
+  font-size: 13px;
+  text-align: center;
+  padding: 28px;
+}
+.bolum-baslik {
+  color: #fff;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+.proje-ust {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.proje-ust h2 {
+  color: #fff;
+  font-size: 20px;
+}
+
+/* Sunucu uyanırken gösterdiğim bilgi şeridi.
+   Render'ın ücretsiz sunucusu uykuya geçtiği için ilk istek ~50 sn sürebiliyor;
+   kullanıcı "çalışmıyor" sanmasın diye bunu ekledim. */
+.uyari-serit {
+  background: rgba(123, 159, 255, 0.12);
+  border: 1px solid rgba(123, 159, 255, 0.3);
+  color: var(--renk-acik-mavi);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.gelistirici {
+  position: fixed;
+  bottom: 24px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  z-index: 50;
+}
+.gelistirici a {
+  color: #cbd5e1;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.gelistirici a:hover {
+  color: #a855f7;
+}
+
+/* ---------- MOBİL UYUM ----------
+   Eski sürümde kanban 3 kolonu telefonda ezilip okunmaz hâle geliyordu.
+   Dar ekranda kolonları alt alta diziyorum. */
+@media (max-width: 760px) {
+  .sayfa {
+    padding: 16px;
   }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+  .pano {
+    flex-direction: column;
+  }
+  .kolon {
+    width: 100%;
+  }
+  .proje-kart {
+    width: 100%;
+  }
+  .ekle-satiri .alan {
+    width: 100%;
+  }
+  .ekle-satiri .btn {
+    width: 100%;
+  }
+  .ust-bar h1 {
+    font-size: 22px;
   }
 }

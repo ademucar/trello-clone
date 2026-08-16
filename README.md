@@ -89,21 +89,84 @@ USER (1) ──────< (∞) PROJECT (1) ──────< (∞) TASK
 
 ```
 trello-clone/
-├── backend/          # Node.js + Express + Sequelize API (PostgreSQL)
-│   └── server.js     # Tüm API endpoint'leri ve veritabanı modelleri
-├── frontend/         # React (Vite) web arayüzü
-│   └── src/App.jsx   # Kanban panosu ve giriş ekranı
-├── mobile/           # React Native (Expo) mobil uygulama
+├── backend/            # Node.js + Express + Sequelize API
+│   ├── db.js           # Veritabanı bağlantısı + tablolar (modeller)
+│   ├── server.js       # Tüm API endpoint'leri
+│   ├── make-admin.js   # Bir kullanıcıyı admin yapan yardımcı script
+│   └── .env.example    # Gerekli ortam değişkenlerinin örneği
+├── frontend/           # React (Vite) web arayüzü
+│   └── src/
+│       ├── api.js      # Backend ile konuşma katmanı (tüm istekler buradan)
+│       ├── App.jsx     # Ekranlar: giriş, proje listesi, kanban panosu
+│       └── App.css     # Uygulama stilleri
+├── mobile/             # React Native (Expo) mobil uygulama
+│   ├── api.js          # Web'dekiyle aynı istek katmanı
 │   └── App.js
-├── electron-main.js  # Masaüstü uygulama (Electron) ana dosyası
+├── electron-main.js    # Masaüstü uygulama (Electron) ana dosyası
+├── render.yaml         # Render deploy ayarları (backend + veritabanı)
 └── .gitignore
 ```
 
+---
+
+## 💻 Yerelde Çalıştırma
+
+**1) Backend**
+
+```bash
+cd backend && npm install && npm start
+```
+
+Sunucu `http://localhost:3000` adresinde açılır. `backend/.env` dosyası yoksa
+veya `DATABASE_URL` boşsa, otomatik olarak yerel **SQLite** (`backend/trello.db`)
+kullanılır — yani ekstra kurulum yapmadan çalışır.
+
+PostgreSQL kullanmak için `backend/.env.example` dosyasını `.env` olarak
+kopyalayıp `DATABASE_URL` ve `JWT_SECRET` değerlerini doldurmak yeterli.
+
+**2) Web arayüzü**
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+Yerel backend'e bağlanmak için `frontend/.env.local` dosyası oluşturup içine
+`VITE_API_URL=http://localhost:3000` yazılır. Bu dosya yoksa canlı sunucu kullanılır.
+
+**3) Mobil**
+
+```bash
+cd mobile && npm install && npm start
+```
+
+**4) Masaüstü**
+
+```bash
+npm install && npm run electron
+```
+
+---
+
+## 🗄️ Veritabanı Davranışı
+
+Backend iki veritabanıyla da çalışacak şekilde yazıldı:
+
+| Durum | Kullanılan veritabanı |
+|-------|----------------------|
+| `DATABASE_URL` **dolu** | PostgreSQL (Render, bulut) |
+| `DATABASE_URL` **boş** | SQLite (`backend/trello.db`, yerel dosya) |
+
+Ayrıca veritabanına **hiç ulaşılamasa bile sunucu çökmez**: ayakta kalır,
+`/health` adresinden durumunu bildirir ve isteklere anlaşılır bir `503`
+mesajı döner.
+
+---
 
 ## 🔌 API Endpoint'leri
 
 | Method | Endpoint | Açıklama |
 |--------|----------|----------|
+| `GET` | `/health` | Sunucu ve veritabanı durumu (deploy sağlık kontrolü) |
 | `POST` | `/auth/register` | Yeni kullanıcı kaydı |
 | `POST` | `/auth/login` | Giriş yap (JWT token döner) |
 | `GET` | `/projects` | Projeleri listele |
@@ -122,7 +185,11 @@ trello-clone/
 - Tüm görev/proje işlemleri **JWT token** ile korunur
 - Veritabanı sorguları **Sequelize ORM** üzerinden yapılır → **SQL Injection** koruması
 - Giriş denemeleri **rate limit** ile sınırlanır → brute-force koruması
-- Gizli bilgiler (veritabanı adresi) `.env` dosyasında tutulur, koda yazılmaz
+  (yalnızca **başarısız** denemeler sayılır, doğru şifreyle giren kullanıcı kilitlenmez)
+- Gizli bilgiler (`DATABASE_URL`, `JWT_SECRET`) `.env` dosyasında tutulur, koda yazılmaz
+- Token imzalama anahtarı ortam değişkeninden okunur; Render'da otomatik üretilir
+- Masaüstü uygulamasında uzak sayfaya **Node.js erişimi verilmez**
+  (`nodeIntegration: false`, `contextIsolation: true`)
 
 ---
 

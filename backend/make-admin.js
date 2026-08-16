@@ -1,35 +1,29 @@
-// Bu küçük script, belirttiğim email'e sahip kullanıcıyı admin yapar.
-// Sadece bir kez çalıştırmak için yazdım. Artık PostgreSQL kullanıyorum.
-require("dotenv").config(); // veritabanı adresini .env'den okuyorum
+// ============================================================
+//  Bu küçük script, belirttiğim email'e sahip kullanıcıyı admin yapar.
+//  Kullanımı:  node make-admin.js ornek@mail.com
+//
+//  Not: Veritabanı bağlantısını ve User modelini db.js'ten alıyorum;
+//  böylece aynı tanımları burada tekrar yazmak zorunda kalmıyorum.
+// ============================================================
+const { User, sequelize, connectDatabase } = require("./db");
 
-const { Sequelize, DataTypes } = require("sequelize");
+// Email'i komut satırından alıyorum (yoksa kullanıcıya nasıl yazacağını söylüyorum)
+const email = String(process.argv[2] || "").trim().toLowerCase();
 
-// server.js'teki ile aynı veritabanına bağlanıyorum (PostgreSQL, Render)
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: "postgres",
-  logging: false,
-  dialectOptions: {
-    ssl: { require: true, rejectUnauthorized: false },
-  },
-});
-
-// User modelini burada da tanımlıyorum (server.js'teki ile aynı)
-const User = sequelize.define("User", {
-  name: { type: DataTypes.STRING, allowNull: false },
-  email: { type: DataTypes.STRING, allowNull: false, unique: true },
-  password: { type: DataTypes.STRING, allowNull: false },
-  role: { type: DataTypes.STRING, defaultValue: "user" },
-});
-
-// Buraya admin yapmak istediğim email'i yazıyorum:
-const email = "admin@example.com";
-
-// Asıl işlem: o email'e sahip kullanıcının rolünü "admin" yapıyorum
 (async () => {
-  const [updatedCount] = await User.update(
-    { role: "admin" },
-    { where: { email } }
-  );
+  if (!email) {
+    console.log("Kullanim: node make-admin.js ornek@mail.com");
+    process.exit(1);
+  }
+
+  // Veritabanına bağlanamazsam anlamlı bir mesaj verip çıkıyorum
+  const conn = await connectDatabase();
+  if (!conn.ok) {
+    console.log("Veritabanina baglanilamadi: " + conn.error);
+    process.exit(1);
+  }
+
+  const [updatedCount] = await User.update({ role: "admin" }, { where: { email } });
 
   if (updatedCount > 0) {
     console.log(email + " artik admin!");
@@ -37,5 +31,5 @@ const email = "admin@example.com";
     console.log(email + " bulunamadi. Once bu email ile kayit ol.");
   }
 
-  await sequelize.close(); // bağlantıyı kapat
+  await sequelize.close();
 })();
