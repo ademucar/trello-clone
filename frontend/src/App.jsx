@@ -205,77 +205,133 @@ function App() {
   //  EKRAN 1: GİRİŞ YAPILMAMIŞSA -> Giriş / Kayıt ekranı
   // ============================================================
   if (!token) {
+    // Künyedeki tarih: gazete başlığının altındaki tarih satırı gibi
+    const bugun = new Date().toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
     return (
       <div className="giris-ekran">
-        <div className="giris-kart">
-          <div className="giris-baslik">
-            <div className="logo">Görev Yönetimi</div>
-            <h2>Trello Clone</h2>
-            <p>{isRegister ? "Yeni hesap oluştur" : "Devam etmek için giriş yap"}</p>
-          </div>
+        <div className="gazete">
+          {/* ---- KÜNYE: logo + manşet + tarih ---- */}
+          <header className="kunye">
+            <div className="kunye-serit">
+              <span>Sayı 01</span>
+              <span>Görev Yönetim Sistemi</span>
+              <span>{bugun}</span>
+            </div>
 
-          {/* Enter tuşuyla da gönderilebilsin diye gerçek bir form kullanıyorum */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (isRegister) handleRegister();
-              else handleLogin();
-            }}
-          >
-            {/* Kayıt modundaysa ad-soyad kutusunu da gösteriyorum */}
-            {isRegister && (
-              <input
-                className="alan"
-                placeholder="Ad Soyad"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            )}
-            <input
-              className="alan"
-              type="email"
-              placeholder="Email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              className="alan"
-              type="password"
-              placeholder="Şifre"
-              autoComplete={isRegister ? "new-password" : "current-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <h1 className="kunye-manset">
+              <img className="marka-logo" src="/yenilogo.png" alt="Trello Clone logosu" />
+              Trello Clone
+            </h1>
 
-            {yavas && <div className="uyari-serit">Sunucu uyanıyor, biraz sürebilir...</div>}
+            <div className="kunye-slogan">
+              Projeni aç, görevlerini yaz, panoda takip et
+            </div>
+          </header>
 
-            {error && (
-              <div className={`mesaj ${error.includes("başarılı") ? "basarili" : ""}`}>
-                {error}
+          {/* ---- GÖVDE: solda form, sağda tanıtım sütunu ---- */}
+          <div className="gazete-govde">
+            <section className="gazete-sol">
+              <div className="sutun-baslik">
+                {isRegister ? "Yeni hesap oluştur" : "Devam etmek için giriş yap"}
               </div>
-            )}
 
-            <button type="submit" className="btn btn-mor btn-blok" disabled={yukleniyor}>
-              {yukleniyor ? "Lütfen bekle..." : isRegister ? "Kayıt Ol" : "Giriş Yap"}
-            </button>
-          </form>
+              {/* Enter tuşuyla da gönderilebilsin diye gerçek bir form kullanıyorum */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (isRegister) handleRegister();
+                  else handleLogin();
+                }}
+              >
+                {/* Kayıt modundaysa ad-soyad kutusunu da gösteriyorum */}
+                {isRegister && (
+                  <input
+                    className="alan"
+                    placeholder="Ad Soyad"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                )}
+                <input
+                  className="alan"
+                  type="email"
+                  placeholder="Email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <input
+                  className="alan"
+                  type="password"
+                  placeholder="Şifre"
+                  autoComplete={isRegister ? "new-password" : "current-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
 
-          <div className="gecis-linki">
-            {isRegister ? "Zaten hesabın var mı? " : "Hesabın yok mu? "}
-            <span onClick={() => { setIsRegister(!isRegister); setError(""); }}>
-              {isRegister ? "Giriş yap" : "Kayıt ol"}
-            </span>
+                {yavas && <div className="uyari-serit">Sunucu uyanıyor, biraz sürebilir...</div>}
+
+                {error && (
+                  <div className={`mesaj ${error.includes("başarılı") ? "basarili" : ""}`}>
+                    {error}
+                  </div>
+                )}
+
+                <button type="submit" className="btn btn-mor btn-blok" disabled={yukleniyor}>
+                  {yukleniyor ? "Lütfen bekle..." : isRegister ? "Kayıt Ol" : "Giriş Yap"}
+                </button>
+              </form>
+
+              <div className="gecis-linki">
+                {isRegister ? "Zaten hesabın var mı? " : "Hesabın yok mu? "}
+                <span onClick={() => { setIsRegister(!isRegister); setError(""); }}>
+                  {isRegister ? "Giriş yap" : "Kayıt ol"}
+                </span>
+              </div>
+            </section>
+
+            {/* Sağ sütun: gazetenin yan haber sütunu gibi, uygulamayı anlatıyor */}
+            <aside className="gazete-sag">
+              <div className="sutun-baslik">Nasıl çalışır</div>
+
+              <ol className="adim-listesi">
+                <li>
+                  <strong>Proje aç</strong>
+                  Her iş için ayrı bir pano oluştur.
+                </li>
+                <li>
+                  <strong>Görev ekle</strong>
+                  Yapılacakları tek tek yaz.
+                </li>
+                <li>
+                  <strong>Sütunda taşı</strong>
+                  Yapılacak, yapılıyor, bitti.
+                </li>
+              </ol>
+
+              <div className="kutu-ilan">
+                <div className="kutu-ilan-baslik">Her yerden erişim</div>
+                Web, mobil ve masaüstü sürümleri aynı hesabı paylaşır.
+                Bir cihazda eklediğin görev diğerlerinde de görünür.
+              </div>
+            </aside>
           </div>
-        </div>
 
-        <div className="gelistirici">
-          <p>
-            Developed by{" "}
-            <a href="https://ademucar.com.tr/" target="_blank" rel="noopener noreferrer">
-              Adem Uçar
-            </a>
-          </p>
+          {/* ---- ALT KÜNYE ---- */}
+          <footer className="gazete-alt">
+            <span>Trello Clone</span>
+            <span>
+              Developed by{" "}
+              <a href="https://ademucar.com.tr/" target="_blank" rel="noopener noreferrer">
+                Adem Uçar
+              </a>
+            </span>
+          </footer>
         </div>
       </div>
     );
@@ -288,6 +344,7 @@ function App() {
   const ustBar = (
     <div className="ust-bar">
       <h1>
+        <img className="marka-logo" src="/yenilogo.png" alt="Trello Clone logosu" />
         Trello Clone
       </h1>
       <div className="ust-bar-sag">

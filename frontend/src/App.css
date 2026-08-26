@@ -27,15 +27,15 @@
   padding: 24px;
 }
 
-/* Giriş kartı: gazetenin ön sayfası gibi ÇİFT çerçeveli bir kutu.
+/* Giriş ekranı artık bir gazete ön sayfası: çift çerçeveli geniş sayfa.
    İkinci çerçeveyi box-shadow katmanlarıyla kuruyorum:
    önce kâğıt boşluğu, sonra ince dış çizgi, en sonda sert gölge. */
-.giris-kart {
+.gazete {
   background: var(--kagit-acik);
   border: 2px solid var(--cizgi-koyu);
-  padding: 36px 32px;
+  padding: 26px 30px 20px;
   width: 100%;
-  max-width: 390px;
+  max-width: 860px;
   animation: slideIn 0.4s ease;
   box-shadow:
     0 0 0 4px var(--kagit),
@@ -43,36 +43,173 @@
     calc(var(--derinlik) + 6px) calc(var(--derinlik) + 6px) 0 var(--murekkep);
 }
 
-/* Künye bloğu: çift çizgi, gazete manşetinin klasik ayracıdır */
-.giris-baslik {
-  text-align: center;
-  border-bottom: 3px double var(--cizgi-koyu);
-  padding-bottom: 14px;
-  margin-bottom: 8px;
-}
-.giris-baslik .logo {
+/* ---- KÜNYE ---- */
+
+/* Üstteki ince şerit: sayı, bölüm adı ve tarih.
+   Gerçek gazetelerde manşetin üstünde tam olarak bu bant bulunur. */
+.kunye-serit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
   font-family: var(--etiket);
-  font-size: 10px;
-  letter-spacing: 0.28em;
+  font-size: 9px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--murekkep-orta);
-  margin-bottom: 6px;
-}
-.giris-baslik h2 {
-  font-size: 30px;
-  line-height: 1.1;
+  border-bottom: 1px solid var(--cizgi-koyu);
+  padding-bottom: 8px;
 }
 
-/* Tarih satırı gibi duran alt bilgi */
-.giris-baslik p {
+/* Manşet: logo ve isim yan yana */
+.kunye-manset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 46px;
+  line-height: 1;
+  text-align: center;
+  padding: 18px 0 12px;
+}
+
+/* Logo. Boyutu em ile verdim: manşet küçülünce logo da orantılı küçülüyor. */
+.marka-logo {
+  width: 1.05em;
+  height: 1.05em;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.kunye-slogan {
+  font-family: var(--metin);
+  font-style: italic;
+  font-size: 14px;
+  text-align: center;
+  color: var(--murekkep-orta);
+  border-top: 1px solid var(--cizgi-koyu);
+  border-bottom: 3px double var(--cizgi-koyu);
+  padding: 8px 0;
+  margin-bottom: 22px;
+}
+
+/* ---- GÖVDE: iki sütun ---- */
+
+.gazete-govde {
+  display: grid;
+  grid-template-columns: 1fr 1px 0.85fr;
+  gap: 26px;
+  align-items: start;
+}
+
+/* Ortadaki dikey çizgi gerçek bir sütun ayracı */
+.gazete-govde::before {
+  content: "";
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  background: var(--cizgi);
+}
+.gazete-sol { grid-column: 1; grid-row: 1; }
+.gazete-sag { grid-column: 3; grid-row: 1; }
+
+/* Sütun başlığı: rubrika */
+.sutun-baslik {
   font-family: var(--etiket);
   font-size: 10px;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  color: var(--murekkep);
+  border-bottom: 2px solid var(--cizgi-koyu);
+  padding-bottom: 7px;
+  margin-bottom: 18px;
+}
+
+/* ---- SAĞ SÜTUN: adım listesi ---- */
+
+.adim-listesi {
+  list-style: none;
+  counter-reset: adim;
+  margin-bottom: 20px;
+}
+.adim-listesi li {
+  counter-increment: adim;
+  position: relative;
+  padding-left: 30px;
+  margin-bottom: 14px;
+  font-family: var(--metin);
+  font-size: 13px;
+  line-height: 1.45;
   color: var(--murekkep-orta);
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--cizgi);
+}
+/* Roma rakamları: kanban kolonlarındaki numaralandırmayla aynı dil */
+.adim-listesi li::before {
+  content: counter(adim, upper-roman);
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--etiket);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--kirmizi);
+}
+.adim-listesi strong {
+  display: block;
+  font-family: var(--manset);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--murekkep);
+  margin-bottom: 2px;
+}
+
+/* Kutu ilan: gazetenin çerçeveli küçük duyurusu */
+.kutu-ilan {
+  border: 2px solid var(--cizgi-koyu);
+  background: var(--kagit);
+  padding: 12px 14px;
+  font-family: var(--metin);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--murekkep-orta);
+  box-shadow: 3px 3px 0 var(--murekkep);
+}
+.kutu-ilan-baslik {
+  font-family: var(--etiket);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--murekkep);
+  margin-bottom: 5px;
+}
+
+/* ---- ALT KÜNYE ---- */
+
+.gazete-alt {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: var(--etiket);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--murekkep-soluk);
+  border-top: 1px solid var(--cizgi-koyu);
+  margin-top: 22px;
+  padding-top: 10px;
+}
+.gazete-alt a {
+  color: var(--murekkep);
+  text-decoration: none;
+  border-bottom: 1px solid var(--cizgi-koyu);
+}
+.gazete-alt a:hover {
+  color: var(--kirmizi);
+  border-bottom-color: var(--kirmizi);
 }
 
 /* ---------- FORM ELEMANLARI ---------- */
@@ -229,7 +366,11 @@
   padding-bottom: 12px;
   margin-bottom: 28px;
 }
+/* Logo ile isim yan yana dursun diye başlığı da esnek kutu yaptım */
 .ust-bar h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 34px;
   line-height: 1;
 }
@@ -451,32 +592,6 @@
   text-align: center;
 }
 
-/* Künye: gazetenin en altındaki basım bilgisi */
-.gelistirici {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  font-family: var(--etiket);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--murekkep-soluk);
-  background: var(--kagit);
-  border-top: 1px solid var(--cizgi);
-  padding: 10px 0;
-}
-.gelistirici a {
-  color: var(--murekkep);
-  text-decoration: none;
-  border-bottom: 1px solid var(--cizgi-koyu);
-}
-.gelistirici a:hover {
-  color: var(--kirmizi);
-  border-bottom-color: var(--kirmizi);
-}
-
 /* ---------- MOBİL UYUM ----------
    Dar ekranda sütunlar yan yana sığmaz; alt alta diziyorum
    ve dikey sütun çizgilerini yatay ayraçlara çeviriyorum. */
@@ -497,4 +612,24 @@
 
   .ekle-satiri .alan { width: 100%; }
   .ekle-satiri .btn { width: 100%; }
+
+  /* Giriş ekranı: iki sütun dar ekrana sığmaz, alt alta diziyorum
+     ve aradaki dikey ayracı gizleyip yatay çizgiye çeviriyorum. */
+  .giris-ekran { padding: 14px; }
+  .gazete { padding: 20px 18px 16px; }
+  .kunye-manset { font-size: 30px; gap: 12px; }
+  .kunye-serit { font-size: 8px; justify-content: center; }
+
+  .gazete-govde {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .gazete-govde::before { display: none; }
+  .gazete-sol,
+  .gazete-sag { grid-column: 1; grid-row: auto; }
+  .gazete-sag {
+    border-top: 1px solid var(--cizgi-koyu);
+    padding-top: 20px;
+    margin-top: 8px;
+  }
 }
