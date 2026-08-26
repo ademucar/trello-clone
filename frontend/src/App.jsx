@@ -9,9 +9,11 @@ import "./App.css";
 
 // Kanban kolonlarım: anahtar, başlık, ikon ve renk
 const COLUMNS = [
-  { key: "todo", title: "Yapılacak", icon: "📋", color: "#eb5a46" },
-  { key: "doing", title: "Yapılıyor", icon: "⚙️", color: "#f2d600" },
-  { key: "done", title: "Bitti", icon: "✅", color: "#61bd4f" },
+  // Gazete konseptine uygun, baski murekkebi tonlari.
+  // Renk sadece kolon basligindaki cizgide gorunuyor; gerisi siyah-beyaz.
+  { key: "todo", title: "Yapılacak", icon: "I", color: "#a33333" },
+  { key: "doing", title: "Yapılıyor", icon: "II", color: "#8a6d1f" },
+  { key: "done", title: "Bitti", icon: "III", color: "#3f5f3a" },
 ];
 
 function App() {
@@ -207,7 +209,7 @@ function App() {
       <div className="giris-ekran">
         <div className="giris-kart">
           <div className="giris-baslik">
-            <div className="logo">🗂️</div>
+            <div className="logo">Görev Yönetimi</div>
             <h2>Trello Clone</h2>
             <p>{isRegister ? "Yeni hesap oluştur" : "Devam etmek için giriş yap"}</p>
           </div>
@@ -286,11 +288,11 @@ function App() {
   const ustBar = (
     <div className="ust-bar">
       <h1>
-        <span>🗂️</span> Trello Clone
+        Trello Clone
       </h1>
       <div className="ust-bar-sag">
         <span>
-          Merhaba, <strong style={{ color: "var(--renk-acik-mavi)" }}>{oturum.name}</strong>
+          Merhaba, <strong className="yazar-adi">{oturum.name}</strong>
           {oturum.role === "admin" && <span className="rozet-admin">ADMIN</span>}
         </span>
         <button className="btn btn-sade" onClick={handleLogout}>
@@ -337,10 +339,10 @@ function App() {
               className="proje-kart"
               onClick={() => setSelectedProject(project)}
             >
-              <div className="ikon">📁</div>
+              <div className="ikon">Proje</div>
               <div className="ad">{project.title}</div>
               {/* Admin isem projenin sahibini de gösteriyorum */}
-              {project.owner && <div className="sahip">👤 {project.owner}</div>}
+              {project.owner && <div className="sahip">{project.owner}</div>}
               {/* stopPropagation: Sil'e basınca kartın "aç" tıklaması tetiklenmesin */}
               <button
                 className="btn-sil"
@@ -366,7 +368,7 @@ function App() {
         <button className="btn btn-sade" onClick={() => setSelectedProject(null)}>
           ← Projeler
         </button>
-        <h2>📁 {selectedProject.title}</h2>
+        <h2>{selectedProject.title}</h2>
       </div>
 
       <div className="ekle-satiri">

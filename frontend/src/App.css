@@ -1,425 +1,451 @@
 /* ============================================================
-   TRELLO CLONE - UYGULAMA STİLLERİ
-   Eskiden tüm stiller App.jsx içinde satır içi (inline) yazılıydı ve
-   bu yüzden JSX okunmuyordu. Hepsini buraya, sınıf (class) hâline taşıdım.
-   Böylece hem kod sadeleşti hem de :hover / medya sorgusu gibi
-   satır içi stille yapılamayan şeyleri CSS'in kendisiyle yapabiliyorum.
+   TRELLO CLONE - UYGULAMA STİLLERİ  (Konsept: GAZETE)
+   Renk ve font değişkenleri index.css içinde tanımlı.
+   Buradaki her kural o değişkenleri kullanıyor; böylece
+   temayı tek yerden değiştirebiliyorum.
    ============================================================ */
 
-/* Tekrar eden renkleri ve ölçüleri değişken yaptım; tek yerden değiştirebiliyorum */
-:root {
-  --renk-mor: #7b3fe4;
-  --renk-mavi: #5067c5;
-  --renk-acik-mavi: #7b9fff;
-  --renk-yesil: #61bd4f;
-  --renk-kirmizi: #eb5a46;
-  --metin: #e8e8e8;
-  --metin-soluk: #8a8fa3;
-  --metin-cok-soluk: #6a6f85;
-  --cam: rgba(255, 255, 255, 0.04);
-  --cam-kenar: rgba(255, 255, 255, 0.08);
-  --golge: 0 10px 35px rgba(0, 0, 0, 0.35);
-}
-
-/* Tüm ekranların ortak dış kabı */
+/* Sayfa kabı: gazete sayfası gibi ortalanmış ve dar tutuldu.
+   Çok uzun satır okumayı zorlaştırdığı için genişliği sınırlıyorum. */
 .sayfa {
-  position: relative;
-  z-index: 1;
-  padding: 28px;
-  max-width: 1150px;
+  padding: 32px 24px 64px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
 /* ---------- GİRİŞ / KAYIT EKRANI ---------- */
 
 .giris-ekran {
-  position: relative;
-  z-index: 1;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 20px;
+  padding: 24px;
 }
 
-/* Cam efektli (glassmorphism) giriş kartı */
+/* Giriş kartı: gazetenin ön sayfası gibi çerçeveli bir kutu */
 .giris-kart {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 42px;
-  border-radius: 20px;
+  background: var(--kagit-acik);
+  border: 1px solid var(--cizgi-koyu);
+  padding: 36px 32px;
   width: 100%;
-  max-width: 370px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-  animation: slideIn 0.5s ease;
+  max-width: 380px;
+  animation: slideIn 0.4s ease;
 }
 
+/* Künye bloğu: çift çizgi, gazete manşetinin klasik ayracıdır */
 .giris-baslik {
   text-align: center;
-  margin-bottom: 30px;
+  border-bottom: 3px double var(--cizgi-koyu);
+  padding-bottom: 14px;
+  margin-bottom: 8px;
 }
 .giris-baslik .logo {
-  font-size: 46px;
-  margin-bottom: 8px;
-  filter: drop-shadow(0 4px 12px rgba(123, 63, 228, 0.5));
+  font-family: var(--etiket);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--murekkep-orta);
+  margin-bottom: 6px;
 }
 .giris-baslik h2 {
-  color: #fff;
-  font-size: 25px;
-  letter-spacing: 0.3px;
+  font-size: 30px;
+  line-height: 1.1;
 }
+
+/* Tarih satırı gibi duran alt bilgi */
 .giris-baslik p {
-  color: var(--metin-soluk);
-  font-size: 13px;
-  margin-top: 6px;
+  font-family: var(--etiket);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--murekkep-orta);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cizgi);
 }
 
 /* ---------- FORM ELEMANLARI ---------- */
 
+/* Alanlar kutu değil, doldurulacak boşluk: sadece alt çizgi.
+   Basılı form estetiğinde kenarlıklı kutu yerine bu kullanılır. */
 .alan {
   width: 100%;
-  padding: 13px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  outline: none;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
-}
-/* Odaklanma efektini artık CSS yapıyor; eskiden bunun için
-   React state'i (focused) tutuluyordu, o state'i tamamen kaldırdım. */
-.alan:focus {
-  border-color: var(--renk-acik-mavi);
-  box-shadow: 0 0 0 3px rgba(123, 159, 255, 0.2);
-}
-
-/* Butonların ortak temeli */
-.btn {
+  padding: 10px 2px;
+  margin-bottom: 18px;
   border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: bold;
-  cursor: pointer;
-  padding: 14px 28px;
-  font-size: 14px;
-  transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+  border-bottom: 1px solid var(--cizgi);
+  border-radius: 0;
+  font-family: var(--metin);
+  font-size: 15px;
+  background: transparent;
+  color: var(--murekkep);
+  outline: none;
+  transition: border-color 0.15s ease;
 }
-/* Bir istek sürerken buton pasifleşiyor: kullanıcı üst üste tıklayamasın */
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-  filter: none;
+.alan:focus {
+  border-bottom-color: var(--cizgi-koyu);
 }
 
-.btn-mor {
-  background: linear-gradient(135deg, var(--renk-mavi), var(--renk-mor));
-  box-shadow: 0 6px 18px rgba(123, 63, 228, 0.35);
+/* Butonların ortak temeli. Köşe yuvarlatma yok:
+   basılı sayfada yuvarlak köşe olmaz. */
+.btn {
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: 0;
+  padding: 11px 20px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--murekkep);
 }
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Birincil eylem: mürekkeple dolu kutu */
+.btn-mor,
 .btn-yesil {
-  background: linear-gradient(135deg, var(--renk-yesil), #4a9e3a);
-  box-shadow: 0 6px 18px rgba(97, 189, 79, 0.35);
+  background: var(--murekkep);
+  color: var(--kagit-acik);
 }
+.btn-mor:hover:not(:disabled),
+.btn-yesil:hover:not(:disabled) {
+  background: var(--kirmizi);
+  border-color: var(--kirmizi);
+}
+
+/* İkincil eylem: boş kutu, üzerine gelince mürekkep dolar */
 .btn-sade {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 9px 18px;
-  border-radius: 10px;
+  background: transparent;
+  color: var(--murekkep);
+  padding: 8px 16px;
 }
+.btn-sade:hover {
+  background: var(--murekkep);
+  color: var(--kagit-acik);
+}
+
 .btn-blok {
   width: 100%;
-  padding: 14px;
-  font-size: 15px;
-  margin-bottom: 16px;
-}
-/* Küçük "Sil" / "taşı" butonları */
-.btn-mini {
-  font-size: 11px;
-  padding: 5px 10px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #ccc;
-  cursor: pointer;
-  font-weight: 600;
-}
-.btn-sil {
-  font-size: 11px;
-  padding: 5px 10px;
-  border-radius: 7px;
-  border: none;
-  background: rgba(235, 90, 70, 0.2);
-  color: #ff8a7a;
-  cursor: pointer;
-  font-weight: 600;
+  padding: 13px;
+  margin-bottom: 18px;
 }
 
-/* Mesaj kutusu: hata kırmızı, başarı yeşil */
+/* Kart içi küçük eylemler: buton değil, altı çizili bağlantı gibi.
+   Kart üstünü kutucuklarla doldurmamak için bu yolu seçtim. */
+.btn-mini,
+.btn-sil {
+  font-family: var(--etiket);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 1px solid currentColor;
+  line-height: 1.6;
+}
+.btn-mini { color: var(--murekkep-orta); }
+.btn-mini:hover { color: var(--murekkep); }
+.btn-sil { color: var(--kirmizi); }
+.btn-sil:hover { color: var(--murekkep); }
+
+/* Mesajlar: gazetenin düzeltme kutusu gibi, solunda kalın çizgi */
 .mesaj {
-  font-size: 13px;
-  margin-bottom: 14px;
-  text-align: center;
-  color: #ff6b6b;
+  font-family: var(--etiket);
+  font-size: 12px;
+  margin-bottom: 16px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--kirmizi);
+  background: var(--kagit);
+  color: var(--kirmizi);
 }
 .mesaj.basarili {
-  color: var(--renk-yesil);
+  border-left-color: var(--murekkep);
+  color: var(--murekkep);
 }
 
 .gecis-linki {
   text-align: center;
-  font-size: 13px;
-  color: var(--metin-soluk);
+  font-family: var(--etiket);
+  font-size: 12px;
+  color: var(--murekkep-orta);
+  border-top: 1px solid var(--cizgi);
+  padding-top: 16px;
 }
 .gecis-linki span {
-  color: var(--renk-acik-mavi);
+  color: var(--kirmizi);
   cursor: pointer;
-  font-weight: bold;
+  border-bottom: 1px solid var(--kirmizi);
 }
 
-/* ---------- ÜST BAR ---------- */
+/* ---------- ÜST BAR (gazete künyesi) ---------- */
 
 .ust-bar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  gap: 12px;
+  align-items: flex-end;
+  gap: 16px;
   flex-wrap: wrap;
+  border-bottom: 3px double var(--cizgi-koyu);
+  padding-bottom: 12px;
+  margin-bottom: 28px;
 }
 .ust-bar h1 {
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 29px;
-  letter-spacing: 0.3px;
+  font-size: 34px;
+  line-height: 1;
 }
 .ust-bar-sag {
-  color: #e0e0e0;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+  font-family: var(--etiket);
+  font-size: 12px;
+  color: var(--murekkep-orta);
 }
+
+/* Kullanıcı adı: künyedeki muhabir ismi gibi */
+.yazar-adi {
+  font-family: var(--metin);
+  font-size: 14px;
+  color: var(--murekkep);
+}
+
+/* Basın kartı hissinde rozet */
 .rozet-admin {
   margin-left: 8px;
-  background: var(--renk-mor);
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-weight: bold;
+  background: var(--murekkep);
+  color: var(--kagit-acik);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  padding: 3px 7px;
 }
 
-/* ---------- EKLEME SATIRI (proje / görev) ---------- */
+/* ---------- EKLEME SATIRI ---------- */
 
 .ekle-satiri {
-  margin-bottom: 34px;
+  margin-bottom: 32px;
   display: flex;
-  gap: 10px;
+  gap: 14px;
+  align-items: flex-end;
   flex-wrap: wrap;
 }
 .ekle-satiri .alan {
-  width: 360px;
+  width: 380px;
   max-width: 100%;
   margin-bottom: 0;
-  padding: 14px 18px;
-  border-radius: 12px;
 }
 
-/* ---------- PROJE KARTLARI ---------- */
+/* ---------- PROJE KARTLARI (ilan kutuları) ---------- */
 
 .proje-listesi {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--cizgi-koyu);
 }
+
+/* Kartlar arasındaki ayrım kutu değil, sütun çizgisi.
+   Gazetede içerikler çizgiyle ayrılır, kutuya konmaz. */
 .proje-kart {
-  width: 260px;
-  background: var(--cam);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--cam-kenar);
-  border-radius: 16px;
-  padding: 20px;
+  background: transparent;
+  border-bottom: 1px solid var(--cizgi);
+  border-right: 1px solid var(--cizgi);
+  padding: 18px 20px 18px 0;
   cursor: pointer;
-  box-shadow: var(--golge);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.15s ease;
 }
-/* Hover efektini CSS'e taşıdım; eskiden her kartta iki adet
-   JavaScript olayı (onMouseEnter/onMouseLeave) ile yapılıyordu. */
 .proje-kart:hover {
-  transform: translateY(-4px);
-  border-color: rgba(123, 159, 255, 0.4);
+  background: var(--kagit-acik);
 }
+
+/* Kicker: haber üstündeki küçük büyük harfli etiket */
 .proje-kart .ikon {
-  font-size: 30px;
-  margin-bottom: 10px;
+  font-family: var(--etiket);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--murekkep-soluk);
+  margin-bottom: 8px;
 }
 .proje-kart .ad {
-  font-size: 16px;
-  font-weight: bold;
-  color: #fff;
-  margin-bottom: 6px;
+  font-family: var(--manset);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--murekkep);
+  margin-bottom: 8px;
 }
 .proje-kart .sahip {
-  font-size: 12px;
-  color: var(--renk-acik-mavi);
+  font-family: var(--etiket);
+  font-size: 11px;
+  color: var(--murekkep-orta);
   margin-bottom: 10px;
 }
 
-/* ---------- KANBAN PANOSU ---------- */
+/* ---------- KANBAN PANOSU (gazete sütunları) ---------- */
 
 .pano {
   display: flex;
-  gap: 18px;
-  align-items: flex-start;
+  gap: 0;
+  align-items: stretch;
+  border-top: 3px double var(--cizgi-koyu);
+  padding-top: 18px;
 }
+
+/* Kolonlar kutu değil; aralarına gerçek sütun çizgisi koyuyorum */
 .kolon {
   flex: 1;
   min-width: 0;
-  background: var(--cam);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--cam-kenar);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: var(--golge);
+  padding: 0 20px;
+  border-right: 1px solid var(--cizgi);
 }
+.kolon:first-child { padding-left: 0; }
+.kolon:last-child { padding-right: 0; border-right: none; }
+
 .kolon-baslik {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
+  padding-bottom: 8px;
   margin-bottom: 16px;
-  padding-bottom: 12px;
-  /* Kolonun rengi JSX'ten CSS değişkeni olarak geliyor */
+  /* Kolonun kimliğini taşıyan tek renkli detay */
   border-bottom: 2px solid var(--kolon-renk);
 }
 .kolon-baslik strong {
-  font-size: 15px;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.kolon-sayac {
-  background: var(--kolon-renk);
-  color: #000;
-  border-radius: 12px;
-  padding: 2px 11px;
-  font-size: 12px;
-  font-weight: bold;
+  font-family: var(--etiket);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--murekkep);
 }
 
-.gorev-kart {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--cam-kenar);
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  animation: slideIn 0.3s ease;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+/* Sayaç: renkli balon değil, sade bir rakam */
+.kolon-sayac {
+  font-family: var(--metin);
+  font-size: 13px;
+  color: var(--murekkep-orta);
 }
-.gorev-kart:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.2);
+
+/* Görev kartı: sütun içindeki bir haber bloğu */
+.gorev-kart {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--cizgi);
+  animation: slideIn 0.3s ease;
 }
 .gorev-kart .metin {
-  font-size: 14px;
-  margin-bottom: 12px;
-  color: var(--metin);
-  overflow-wrap: anywhere; /* Çok uzun görev adı kartı taşırmasın */
+  font-family: var(--metin);
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--murekkep);
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+  transition: color 0.15s ease;
+}
+.gorev-kart:hover .metin {
+  color: var(--kirmizi);
 }
 .gorev-butonlar {
   display: flex;
-  gap: 6px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
 /* ---------- ORTAK KÜÇÜK PARÇALAR ---------- */
 
 .bos-mesaj {
-  color: var(--metin-cok-soluk);
-  font-size: 13px;
-  text-align: center;
-  padding: 28px;
+  font-family: var(--etiket);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--murekkep-soluk);
+  padding: 24px 0;
 }
+
+/* Bölüm başlığı: gazete rubrikası */
 .bolum-baslik {
-  color: #fff;
-  font-size: 18px;
-  margin-bottom: 16px;
+  font-family: var(--etiket);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--murekkep-orta);
+  margin-bottom: 14px;
 }
+
 .proje-ust {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: baseline;
+  gap: 16px;
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
 .proje-ust h2 {
-  color: #fff;
-  font-size: 20px;
+  font-size: 26px;
 }
 
-/* Sunucu uyanırken gösterdiğim bilgi şeridi.
-   Render'ın ücretsiz sunucusu uykuya geçtiği için ilk istek ~50 sn sürebiliyor;
-   kullanıcı "çalışmıyor" sanmasın diye bunu ekledim. */
+/* Sunucu uyanırken çıkan bilgi şeridi: son dakika kutusu.
+   Ücretsiz sunucu uykuya geçtiği için ilk istek uzun sürebiliyor;
+   kullanıcı bozuk sanmasın diye duruyor. */
 .uyari-serit {
-  background: rgba(123, 159, 255, 0.12);
-  border: 1px solid rgba(123, 159, 255, 0.3);
-  color: var(--renk-acik-mavi);
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  text-align: center;
+  font-family: var(--etiket);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--murekkep);
+  color: var(--kagit-acik);
+  padding: 9px 12px;
   margin-bottom: 16px;
+  text-align: center;
 }
 
+/* Künye: gazetenin en altındaki basım bilgisi */
 .gelistirici {
   position: fixed;
-  bottom: 24px;
+  bottom: 0;
   left: 0;
   width: 100%;
   text-align: center;
-  font-size: 12px;
-  color: #64748b;
-  z-index: 50;
+  font-family: var(--etiket);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--murekkep-soluk);
+  background: var(--kagit);
+  border-top: 1px solid var(--cizgi);
+  padding: 10px 0;
 }
 .gelistirici a {
-  color: #cbd5e1;
-  font-weight: 500;
+  color: var(--murekkep);
   text-decoration: none;
-  transition: color 0.2s;
+  border-bottom: 1px solid var(--cizgi-koyu);
 }
 .gelistirici a:hover {
-  color: #a855f7;
+  color: var(--kirmizi);
+  border-bottom-color: var(--kirmizi);
 }
 
 /* ---------- MOBİL UYUM ----------
-   Eski sürümde kanban 3 kolonu telefonda ezilip okunmaz hâle geliyordu.
-   Dar ekranda kolonları alt alta diziyorum. */
+   Dar ekranda sütunlar yan yana sığmaz; alt alta diziyorum
+   ve dikey sütun çizgilerini yatay ayraçlara çeviriyorum. */
 @media (max-width: 760px) {
-  .sayfa {
-    padding: 16px;
-  }
-  .pano {
-    flex-direction: column;
-  }
+  .sayfa { padding: 20px 16px 56px; }
+  .ust-bar h1 { font-size: 26px; }
+
+  .pano { flex-direction: column; }
   .kolon {
-    width: 100%;
+    padding: 0 0 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--cizgi);
+    margin-bottom: 20px;
   }
-  .proje-kart {
-    width: 100%;
-  }
-  .ekle-satiri .alan {
-    width: 100%;
-  }
-  .ekle-satiri .btn {
-    width: 100%;
-  }
-  .ust-bar h1 {
-    font-size: 22px;
-  }
+  .kolon:last-child { border-bottom: none; }
+
+  .proje-listesi { grid-template-columns: 1fr; }
+  .proje-kart { border-right: none; padding-right: 0; }
+
+  .ekle-satiri .alan { width: 100%; }
+  .ekle-satiri .btn { width: 100%; }
 }

@@ -1,69 +1,89 @@
-/* Tüm elemanların varsayılan boşluklarını sıfırlıyorum ki tasarım tutarlı olsun */
-/* Ayrıca Montserrat fontunu her yere uyguladım (güçlü başlıklar için) */
+/* ============================================================
+   TRELLO CLONE - TEMEL STİLLER  (Konsept: GAZETE)
+   Fikir: Uygulama bir gazete sayfası gibi dursun.
+   Gazete kâğıdı zemin, mürekkep siyahı metin, çizgilerle
+   ayrılmış sütunlar, manşet için serif tipografi.
+   Renk neredeyse yok; hiyerarşiyi tipografi ve çizgi kuruyor.
+   ============================================================ */
+
+/* ---------- TASARIM DEĞİŞKENLERİ ----------
+   Tüm renk ve font kararları burada. Temayı değiştirmek
+   istersem sadece bu blokla oynamam yeterli. */
+:root {
+  /* Kâğıt yüzeyleri */
+  --kagit: #f6f3ea;        /* sayfa zemini (gazete kâğıdı) */
+  --kagit-acik: #fdfbf5;   /* kart zemini, kâğıttan bir ton açık */
+
+  /* Mürekkep tonları */
+  --murekkep: #17150f;       /* ana metin, çizgiler */
+  --murekkep-orta: #5c574a;  /* ikincil metin */
+  --murekkep-soluk: #8a8578; /* ipucu, boş mesajı */
+
+  /* Çizgiler */
+  --cizgi: #ddd8ca;        /* ince ayraç */
+  --cizgi-koyu: #17150f;   /* kalın ayraç (mürekkep) */
+
+  /* Tek renkli vurgu: gazetelerde ikinci mürekkep hep kırmızıdır */
+  --kirmizi: #a33333;
+
+  /* Tipografi rolleri
+     - manset: sadece büyük başlıklar (dramatik, yüksek kontrastlı serif)
+     - metin : okunacak içerik (ekran için tasarlanmış serif)
+     - etiket: küçük büyük-harfli etiketler ve butonlar (sans) */
+  --manset: "Playfair Display", Georgia, "Times New Roman", serif;
+  --metin: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --etiket: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Koyu tema arka planı: derin lacivert-mor tonlarında bir gradient kullandım */
 html, body, #root {
-  background: radial-gradient(circle at 20% 20%, #1a1f3a 0%, #0d1025 50%, #060814 100%);
-  background-color: #060814; /* Cihaz çok uzaklaştırılırsa diye en koyu renkten zemin sigortası */
+  background: var(--kagit);
   min-height: 100vh;
   width: 100%;
-  color: #e0e0e0;
+  color: var(--murekkep);
+  font-family: var(--metin);
+  /* Serif metinlerin ekranda daha yumuşak görünmesi için */
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Arka planda hafifçe hareket eden bir ışık efekti ekledim (sitemdeki canlılık için) */
-body::before {
-  content: "";
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(80, 103, 197, 0.08) 0%, transparent 40%);
-  animation: float 15s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes float {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(5%, 5%); }
-}
-
-/* Ana başlığa senin portföy sitendeki gibi parlayan mavi bir efekt verdim */
+/* Manşet: gazete başlığı gibi iri, sıkı harf aralıklı */
 h1 {
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-shadow: 0 0 25px rgba(123, 159, 255, 0.4);
-}
-
-/* Giriş ekranındaki başlıklar da kalın ve güçlü dursun diye ayarladım */
-h2 {
+  font-family: var(--manset);
   font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* Butonların üzerine gelince hafif büyümesi ve parlaması için animasyon (canlılık) */
+h2 {
+  font-family: var(--manset);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Butonlar küçük, büyük harfli ve aralıklı: gazete kutu ilanı hissi.
+   Eski temadaki "yukarı zıplama" efektini kaldırdım; gazetede
+   hareket yok, geri bildirim mürekkebin dolmasıyla veriliyor. */
 button {
+  font-family: var(--etiket);
   font-weight: 600;
-  transition: all 0.2s ease;
-}
-button:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.12);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-/* Görev kartlarının belirmesi için yumuşak bir giriş animasyonu */
+/* Kartların belirmesi için sade bir soluklaşma.
+   Eskiden yukarı kayarak geliyordu; basılı sayfada kayma olmaz. */
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Input'lardaki placeholder yazılarının rengini yumuşattım */
 input::placeholder {
-  color: #6a6f85;
+  color: var(--murekkep-soluk);
+  font-style: italic; /* gazete formlarındaki el yazısı ipucu hissi */
 }
