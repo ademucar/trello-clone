@@ -5,12 +5,16 @@
    temayı tek yerden değiştirebiliyorum.
    ============================================================ */
 
-/* Sayfa kabı: gazete sayfası gibi ortalanmış ve dar tutuldu.
-   Çok uzun satır okumayı zorlaştırdığı için genişliği sınırlıyorum. */
+/* Sayfanın kendisi de çerçeveli: uygulama, masaya konmuş
+   basılı bir sayfa gibi duruyor. Çerçevelemeyi belirginleştiren
+   en dıştaki katman bu. */
 .sayfa {
-  padding: 32px 24px 64px;
   max-width: 1100px;
-  margin: 0 auto;
+  margin: 28px auto 48px;
+  padding: 30px 30px 36px;
+  background: var(--kagit-acik);
+  border: 2px solid var(--cizgi-koyu);
+  box-shadow: var(--derinlik) var(--derinlik) 0 var(--murekkep);
 }
 
 /* ---------- GİRİŞ / KAYIT EKRANI ---------- */
@@ -23,14 +27,20 @@
   padding: 24px;
 }
 
-/* Giriş kartı: gazetenin ön sayfası gibi çerçeveli bir kutu */
+/* Giriş kartı: gazetenin ön sayfası gibi ÇİFT çerçeveli bir kutu.
+   İkinci çerçeveyi box-shadow katmanlarıyla kuruyorum:
+   önce kâğıt boşluğu, sonra ince dış çizgi, en sonda sert gölge. */
 .giris-kart {
   background: var(--kagit-acik);
-  border: 1px solid var(--cizgi-koyu);
+  border: 2px solid var(--cizgi-koyu);
   padding: 36px 32px;
   width: 100%;
-  max-width: 380px;
+  max-width: 390px;
   animation: slideIn 0.4s ease;
+  box-shadow:
+    0 0 0 4px var(--kagit),
+    0 0 0 6px var(--cizgi-koyu),
+    calc(var(--derinlik) + 6px) calc(var(--derinlik) + 6px) 0 var(--murekkep);
 }
 
 /* Künye bloğu: çift çizgi, gazete manşetinin klasik ayracıdır */
@@ -87,48 +97,75 @@
   border-bottom-color: var(--cizgi-koyu);
 }
 
-/* Butonların ortak temeli. Köşe yuvarlatma yok:
-   basılı sayfada yuvarlak köşe olmaz. */
+/* ---------- BUTONLAR (sert gölgeli, 3B) ----------
+   Gölge bulanık değil, kaymış ikinci bir baskı gibi duruyor.
+   Butona basınca buton gölgenin üstüne oturuyor: gerçekten
+   bastırılmış hissi veren şey bu iki hareketin birlikteliği. */
 .btn {
-  border: 1px solid var(--cizgi-koyu);
-  border-radius: 0;
+  position: relative;
+  border: 2px solid var(--cizgi-koyu);
+  border-radius: 3px;
   padding: 11px 20px;
   cursor: pointer;
-  background: transparent;
+  background: var(--kagit-acik);
   color: var(--murekkep);
-}
-.btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  box-shadow: var(--derinlik) var(--derinlik) 0 var(--murekkep);
 }
 
-/* Birincil eylem: mürekkeple dolu kutu */
+/* Üzerine gelince biraz daha yükseliyor */
+.btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: calc(var(--derinlik) + 1px) calc(var(--derinlik) + 1px) 0 var(--murekkep);
+}
+
+/* Basılınca gölgenin üstüne oturuyor: gölge kayboluyor, buton kayıyor */
+.btn:active:not(:disabled) {
+  transform: translate(var(--derinlik), var(--derinlik));
+  box-shadow: 0 0 0 var(--murekkep);
+}
+
+/* Pasif buton zaten basılı duruyor: tıklanamayacağı bakınca anlaşılıyor */
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: translate(var(--derinlik), var(--derinlik));
+  box-shadow: 0 0 0 var(--murekkep);
+}
+
+/* Birincil eylem: mürekkeple dolu kutu, altında KIRMIZI gölge.
+   Siyah butonun altındaki kırmızı kayma, ucuz baskıdaki renk
+   kaymasını (misregistration) taklit ediyor. Hem derinlik veriyor
+   hem de gazete konseptine ait bir detay oluyor. */
 .btn-mor,
 .btn-yesil {
   background: var(--murekkep);
   color: var(--kagit-acik);
+  box-shadow: var(--derinlik) var(--derinlik) 0 var(--kirmizi);
 }
 .btn-mor:hover:not(:disabled),
 .btn-yesil:hover:not(:disabled) {
-  background: var(--kirmizi);
-  border-color: var(--kirmizi);
+  box-shadow: calc(var(--derinlik) + 1px) calc(var(--derinlik) + 1px) 0 var(--kirmizi);
+}
+.btn-mor:active:not(:disabled),
+.btn-yesil:active:not(:disabled),
+.btn-mor:disabled,
+.btn-yesil:disabled {
+  box-shadow: 0 0 0 var(--kirmizi);
 }
 
 /* İkincil eylem: boş kutu, üzerine gelince mürekkep dolar */
 .btn-sade {
-  background: transparent;
-  color: var(--murekkep);
   padding: 8px 16px;
 }
-.btn-sade:hover {
+.btn-sade:hover:not(:disabled) {
   background: var(--murekkep);
   color: var(--kagit-acik);
 }
 
 .btn-blok {
   width: 100%;
-  padding: 13px;
-  margin-bottom: 18px;
+  padding: 14px;
+  margin-bottom: 22px;
 }
 
 /* Kart içi küçük eylemler: buton değil, altı çizili bağlantı gibi.
@@ -241,23 +278,27 @@
 
 .proje-listesi {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0;
-  border-top: 1px solid var(--cizgi-koyu);
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 22px;
 }
 
-/* Kartlar arasındaki ayrım kutu değil, sütun çizgisi.
-   Gazetede içerikler çizgiyle ayrılır, kutuya konmaz. */
+/* Kartlar artık gerçek çerçeveli kutular: kalın mürekkep kenar
+   ve altında sert gölge. Gazetenin kutu ilanı gibi duruyorlar. */
 .proje-kart {
-  background: transparent;
-  border-bottom: 1px solid var(--cizgi);
-  border-right: 1px solid var(--cizgi);
-  padding: 18px 20px 18px 0;
+  background: var(--kagit);
+  border: 2px solid var(--cizgi-koyu);
+  padding: 18px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  box-shadow: var(--derinlik) var(--derinlik) 0 var(--murekkep);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 .proje-kart:hover {
-  background: var(--kagit-acik);
+  transform: translate(-2px, -2px);
+  box-shadow: calc(var(--derinlik) + 2px) calc(var(--derinlik) + 2px) 0 var(--murekkep);
+}
+.proje-kart:active {
+  transform: translate(var(--derinlik), var(--derinlik));
+  box-shadow: 0 0 0 var(--murekkep);
 }
 
 /* Kicker: haber üstündeki küçük büyük harfli etiket */
@@ -288,30 +329,29 @@
 
 .pano {
   display: flex;
-  gap: 0;
-  align-items: stretch;
-  border-top: 3px double var(--cizgi-koyu);
-  padding-top: 18px;
+  gap: 22px;
+  align-items: flex-start;
 }
 
-/* Kolonlar kutu değil; aralarına gerçek sütun çizgisi koyuyorum */
+/* Kolonlar artık çerçeveli kutular. Kolonun rengi hem başlık
+   çizgisinde hem de kutunun üst kenarında görünüyor. */
 .kolon {
   flex: 1;
   min-width: 0;
-  padding: 0 20px;
-  border-right: 1px solid var(--cizgi);
+  background: var(--kagit);
+  border: 2px solid var(--cizgi-koyu);
+  border-top: 6px solid var(--kolon-renk);
+  padding: 16px 18px 20px;
+  box-shadow: var(--derinlik) var(--derinlik) 0 var(--murekkep);
 }
-.kolon:first-child { padding-left: 0; }
-.kolon:last-child { padding-right: 0; border-right: none; }
 
 .kolon-baslik {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
-  /* Kolonun kimliğini taşıyan tek renkli detay */
-  border-bottom: 2px solid var(--kolon-renk);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid var(--cizgi-koyu);
 }
 .kolon-baslik strong {
   font-family: var(--etiket);
@@ -329,12 +369,22 @@
   color: var(--murekkep-orta);
 }
 
-/* Görev kartı: sütun içindeki bir haber bloğu */
+/* Görev kartı: kolon kutusunun içinde kendi çerçevesi olan küçük kutu.
+   Gölgeyi kolondan daha ince tuttum; yoksa iç içe gölgeler ağırlaşıyor. */
 .gorev-kart {
-  padding: 14px 0;
-  border-bottom: 1px solid var(--cizgi);
+  background: var(--kagit-acik);
+  border: 2px solid var(--cizgi-koyu);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  box-shadow: 3px 3px 0 var(--murekkep);
   animation: slideIn 0.3s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
+.gorev-kart:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--kirmizi);
+}
+.gorev-kart:last-child { margin-bottom: 0; }
 .gorev-kart .metin {
   font-family: var(--metin);
   font-size: 16px;
@@ -431,20 +481,19 @@
    Dar ekranda sütunlar yan yana sığmaz; alt alta diziyorum
    ve dikey sütun çizgilerini yatay ayraçlara çeviriyorum. */
 @media (max-width: 760px) {
-  .sayfa { padding: 20px 16px 56px; }
+  /* Dar ekranda gölgeler yatay taşmaya yol açmasın diye derinliği azaltıyorum */
+  :root { --derinlik: 3px; }
+
+  .sayfa {
+    margin: 12px;
+    padding: 20px 16px 28px;
+  }
   .ust-bar h1 { font-size: 26px; }
 
+  /* Kolonlar alt alta; her biri kendi çerçevesini koruyor */
   .pano { flex-direction: column; }
-  .kolon {
-    padding: 0 0 20px;
-    border-right: none;
-    border-bottom: 1px solid var(--cizgi);
-    margin-bottom: 20px;
-  }
-  .kolon:last-child { border-bottom: none; }
 
   .proje-listesi { grid-template-columns: 1fr; }
-  .proje-kart { border-right: none; padding-right: 0; }
 
   .ekle-satiri .alan { width: 100%; }
   .ekle-satiri .btn { width: 100%; }

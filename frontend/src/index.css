@@ -26,6 +26,11 @@
   /* Tek renkli vurgu: gazetelerde ikinci mürekkep hep kırmızıdır */
   --kirmizi: #a33333;
 
+  /* Sert gölge derinliği. Butonların ve kutuların 3B hissi bundan geliyor.
+     Bulanıklık YOK: gölge, kâğıdın altına kaymış ikinci bir baskı gibi.
+     Tek yerden değiştirince tüm arayüzün derinliği değişiyor. */
+  --derinlik: 4px;
+
   /* Tipografi rolleri
      - manset: sadece büyük başlıklar (dramatik, yüksek kontrastlı serif)
      - metin : okunacak içerik (ekran için tasarlanmış serif)
@@ -73,7 +78,9 @@ button {
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  /* transform ve box-shadow da geçişe dahil: butonun basılma hissi buradan geliyor */
+  transition: background-color 0.12s ease, color 0.12s ease,
+              border-color 0.12s ease, transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 /* Kartların belirmesi için sade bir soluklaşma.
