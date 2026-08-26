@@ -219,7 +219,6 @@ function App() {
           <header className="kunye">
             <div className="kunye-serit">
               <span>Sayı 01</span>
-              <span>Görev Yönetim Sistemi</span>
               <span>{bugun}</span>
             </div>
 
