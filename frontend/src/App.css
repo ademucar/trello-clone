@@ -583,10 +583,41 @@
     margin: 12px;
     padding: 20px 16px 28px;
   }
-  .ust-bar h1 { font-size: 26px; }
 
-  /* Kolonlar alt alta; her biri kendi çerçevesini koruyor */
-  .pano { flex-direction: column; }
+  /* ÜST BAR (mobil): başlık solda, Çıkış sağ üstte, selamlama alt satırda.
+     Sorun şuydu: selamlama ve Çıkış tek bir kutunun (.ust-bar-sag) içinde
+     olduğu için ikisi birlikte alta sarıyor ve buton ortada kalıyordu.
+     display:contents o kutuyu düzen açısından ortadan kaldırıyor; böylece
+     selamlama ile buton .ust-bar'ın doğrudan çocukları oluyor ve
+     her birini ayrı ayrı sıralayabiliyorum. */
+  .ust-bar { align-items: center; }
+  .ust-bar-sag { display: contents; }
+
+  .ust-bar h1 {
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;      /* uzun başlık butonu ekran dışına itmesin */
+    font-size: 24px;
+  }
+  .ust-bar .btn-sade {
+    order: 2;
+    margin-left: auto; /* sağ kenara yasla */
+    flex-shrink: 0;
+  }
+  .ust-bar-sag > span {
+    order: 3;
+    flex-basis: 100%;  /* kendi satırına geç */
+    margin-top: 10px;
+  }
+
+  /* Kolonlar alt alta; her biri kendi çerçevesini koruyor.
+     align-items: stretch şart — dikey dizilimde bu ayar yatay ekseni
+     yönetiyor. flex-start kalsaydı kolonlar içeriği kadar daralır,
+     ekranın sağında boşluk kalırdı. */
+  .pano {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
   .proje-listesi { grid-template-columns: 1fr; }
 
@@ -598,7 +629,10 @@
   .giris-ekran { padding: 14px; }
   .gazete { padding: 20px 18px 16px; }
   .kunye-manset { font-size: 30px; gap: 12px; }
-  .kunye-serit { font-size: 8px; justify-content: center; }
+  /* Sadece yazıyı küçültüyorum; hizalama masaüstündeki gibi kalsın:
+     "Sayı 01" solda, tarih sağda. (Önceden ortalıyordum, ikisi
+     ekranın ortasında birbirine yapışıyordu.) */
+  .kunye-serit { font-size: 8px; }
 
   .gazete-govde {
     grid-template-columns: 1fr;
