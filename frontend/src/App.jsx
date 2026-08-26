@@ -313,12 +313,6 @@ function App() {
                   Yapılacak, yapılıyor, bitti.
                 </li>
               </ol>
-
-              <div className="kutu-ilan">
-                <div className="kutu-ilan-baslik">Her yerden erişim</div>
-                Web, mobil ve masaüstü sürümleri aynı hesabı paylaşır.
-                Bir cihazda eklediğin görev diğerlerinde de görünür.
-              </div>
             </aside>
           </div>
 

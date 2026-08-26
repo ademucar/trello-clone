@@ -132,8 +132,9 @@
 .adim-listesi {
   list-style: none;
   counter-reset: adim;
-  margin-bottom: 20px;
 }
+/* Listenin sonunda gereksiz boşluk kalmasın */
+.adim-listesi li:last-child { margin-bottom: 0; }
 .adim-listesi li {
   counter-increment: adim;
   position: relative;
@@ -163,27 +164,6 @@
   font-size: 15px;
   color: var(--murekkep);
   margin-bottom: 2px;
-}
-
-/* Kutu ilan: gazetenin çerçeveli küçük duyurusu */
-.kutu-ilan {
-  border: 2px solid var(--cizgi-koyu);
-  background: var(--kagit);
-  padding: 12px 14px;
-  font-family: var(--metin);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--murekkep-orta);
-  box-shadow: 3px 3px 0 var(--murekkep);
-}
-.kutu-ilan-baslik {
-  font-family: var(--etiket);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--murekkep);
-  margin-bottom: 5px;
 }
 
 /* ---- ALT KÜNYE ---- */
